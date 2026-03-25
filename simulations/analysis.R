@@ -119,7 +119,7 @@ generate_table <- function() {
     "\\addlinespace[2pt]\n",
     paste(rows_B, collapse=" \\\\\n"), " \\\\\n",
     "\\addlinespace[4pt]\n",
-    "\\multicolumn{8}{l}{\\textit{Panel C: Realistic combination} ($n=50$, $N=50$, $\\pi_Z=0.5$)} \\\\\n",
+    "\\multicolumn{8}{l}{\\textit{Panel C: Realistic combination} ($n=50$, $N=50$, $F \\approx 15$)} \\\\\n",
     "\\addlinespace[2pt]\n",
     paste(rows_C, collapse=" \\\\\n"), " \\\\\n",
     "\\addlinespace[4pt]\n",
