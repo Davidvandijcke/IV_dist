@@ -77,8 +77,9 @@ estimate_2sls <- function(Q_Yk, X, Z, q_grid, weights = NULL) {
   Z_w <- Z_design * sw   # M x (l+1)
   Q_w <- Q_Yk * sw       # M x Q
 
-  # Instrument projection: P_Z = Z_w (Z_w'Z_w)^{-1} Z_w'
-  ZtZ <- crossprod(Z_w)
+  # Instrument projection (memory-efficient: avoid forming M x M matrix P_Z)
+  # X_hat = Z_w (Z_w'Z_w)^{-1} Z_w' X_w = Z_w %*% (ZtZ_inv %*% Z_w'X_w)
+  ZtZ <- crossprod(Z_w)                  # (l+1) x (l+1)
   ZtZ_inv <- tryCatch(solve(ZtZ), error = function(e) NULL)
   if (is.null(ZtZ_inv)) {
     return(list(
@@ -88,11 +89,11 @@ estimate_2sls <- function(Q_Yk, X, Z, q_grid, weights = NULL) {
     ))
   }
 
-  P_Z   <- Z_w %*% ZtZ_inv %*% t(Z_w)
-  X_hat <- P_Z %*% X_w  # M x (p+1)
+  ZtX <- crossprod(Z_w, X_w)             # (l+1) x (p+1)
+  ZtQ <- crossprod(Z_w, Q_w)             # (l+1) x Q
 
-  # Check rank of X_hat'X_hat
-  XhXh     <- crossprod(X_hat)
+  # X_hat'X_hat = (ZtX)' ZtZ_inv ZtX  — small (p+1) x (p+1) matrix
+  XhXh     <- crossprod(ZtX, ZtZ_inv %*% ZtX)
   XhXh_inv <- tryCatch(solve(XhXh), error = function(e) NULL)
   if (is.null(XhXh_inv)) {
     return(list(
@@ -102,9 +103,9 @@ estimate_2sls <- function(Q_Yk, X, Z, q_grid, weights = NULL) {
     ))
   }
 
-  # Compute all coefficients at once: (p+1) x Q matrix
-  # beta_all[, iq] = (X_hat'X_hat)^{-1} X_hat' Q_w[, iq]
-  beta_all <- XhXh_inv %*% crossprod(X_hat, Q_w)  # (p+1) x Q
+  # beta = (X_hat'X_hat)^{-1} X_hat'Q_w = XhXh_inv %*% ZtX' ZtZ_inv ZtQ
+  # All operations on small matrices — no M x M allocation
+  beta_all <- XhXh_inv %*% crossprod(ZtX, ZtZ_inv %*% ZtQ)  # (p+1) x Q
 
   beta0 <- as.vector(beta_all[1, ])
   beta1 <- if (p == 1) {
