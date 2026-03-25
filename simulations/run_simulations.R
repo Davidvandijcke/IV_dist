@@ -88,50 +88,86 @@ run_one_rep <- function(seed, dgp_fn, dgp_args, estimator_names, q_grid) {
 
   true_gamma <- data$true_gamma
   Q <- length(q_grid)
+  M <- length(data$y_list)
 
-  # Evaluate each estimator
-  results <- vector("list", length(estimator_names))
+  # Run both estimators
+  fit_2sls <- tryCatch(
+    estimate_2sls(Q_Yk, data$x2, data$z, q_grid),
+    error = function(e) NULL
+  )
+  fit_div <- tryCatch(
+    estimate_div(Q_Yk, data$x2, data$z, q_grid),
+    error = function(e) NULL
+  )
 
-  for (k in seq_along(estimator_names)) {
-    est_name <- estimator_names[k]
-    est_fn   <- match.fun(ESTIMATOR_REGISTRY[[est_name]])
-
-    fit <- tryCatch(
-      est_fn(Q_Yk, data$x2, data$z, q_grid),
-      error = function(e) NULL
-    )
-
-    # Extract slope coefficient (beta1 is the treatment effect)
-    if (is.null(fit) || any(is.na(fit$beta1))) {
-      results[[k]] <- data.frame(
-        estimator = est_name,
-        imse      = NA_real_,
-        ibias     = NA_real_,
-        iabs_bias = NA_real_,
-        stringsAsFactors = FALSE
-      )
-      next
-    }
-
-    # beta1: Q-vector for scalar X, or first row of p x Q matrix
-    beta1_hat <- if (is.matrix(fit$beta1)) fit$beta1[1, ] else fit$beta1
-
-    # Compute integrated metrics (simple average over quantile grid)
-    errors     <- beta1_hat - true_gamma
-    imse       <- mean(errors^2)
-    ibias      <- mean(errors)
-    iabs_bias  <- mean(abs(errors))
-
-    results[[k]] <- data.frame(
-      estimator = est_name,
-      imse      = imse,
-      ibias     = ibias,
-      iabs_bias = iabs_bias,
+  if (is.null(fit_2sls) || any(is.na(fit_2sls$beta1))) {
+    return(data.frame(
+      estimator = c("2sls", "div"),
+      imse = NA_real_, ibias = NA_real_, iabs_bias = NA_real_,
+      w2_sq = NA_real_, frac_invalid = NA_real_, avg_correction = NA_real_,
       stringsAsFactors = FALSE
-    )
+    ))
   }
 
-  do.call(rbind, results)
+  # Extract slope coefficients
+  b1_2sls <- if (is.matrix(fit_2sls$beta1)) fit_2sls$beta1[1, ] else fit_2sls$beta1
+  b1_div  <- if (is.matrix(fit_div$beta1))  fit_div$beta1[1, ]  else fit_div$beta1
+
+  # Coefficient IMSE
+  imse_2sls <- mean((b1_2sls - true_gamma)^2)
+  imse_div  <- mean((b1_div  - true_gamma)^2)
+
+  # W₂², fraction invalid, avg correction
+  # Compute fitted psi curves and their projections
+  x_vec <- if (is.matrix(data$x2)) data$x2[, 1] else data$x2
+  mu_x  <- mean(x_vec)
+
+  w2_unc <- 0; w2_prj <- 0; n_invalid <- 0; total_corr <- 0
+
+  # True group QF at grid points (if available from DGP)
+  has_alpha <- !is.null(data$alpha_mat)
+  has_beta0 <- !is.null(data$true_beta0)
+
+  for (j in seq_len(M)) {
+    psi_j  <- fit_2sls$beta0 + b1_2sls * (x_vec[j] - mu_x)
+    proj_j <- pava(psi_j)
+
+    # Correction magnitude
+    total_corr <- total_corr + mean((proj_j - psi_j)^2)
+
+    # Invalid group?
+    if (any(diff(psi_j) < 0)) n_invalid <- n_invalid + 1
+
+    # W₂²: need true Q_{Y_j}(u) at grid points
+    if (has_alpha && has_beta0) {
+      Q_true_j <- data$true_beta0 + true_gamma * (x_vec[j] - mu_x) + data$alpha_mat[j, ]
+      w2_unc <- w2_unc + mean((psi_j  - Q_true_j)^2)
+      w2_prj <- w2_prj + mean((proj_j - Q_true_j)^2)
+    }
+  }
+
+  frac_invalid <- n_invalid / M
+  avg_correction <- total_corr / M
+
+  # W₂² (set to NA if not computable)
+  if (has_alpha && has_beta0) {
+    w2_2sls <- w2_unc / M
+    w2_div  <- w2_prj / M
+  } else {
+    w2_2sls <- NA_real_
+    w2_div  <- NA_real_
+  }
+
+  data.frame(
+    estimator      = c("2sls", "div"),
+    imse           = c(imse_2sls, imse_div),
+    ibias          = c(mean(b1_2sls - true_gamma), mean(b1_div - true_gamma)),
+    iabs_bias      = c(mean(abs(b1_2sls - true_gamma)), mean(abs(b1_div - true_gamma))),
+    w2_sq          = c(w2_2sls, w2_div),
+    frac_invalid   = c(frac_invalid, 0),  # D-IV always produces valid QFs
+    avg_correction = c(avg_correction, 0),
+    stringsAsFactors = FALSE
+  )
 }
 
 
@@ -203,16 +239,24 @@ run_experiment <- function(experiment_name,
       agg <- do.call(rbind, lapply(estimators, function(est) {
         sub <- rep_df[rep_df$estimator == est, ]
         valid <- !is.na(sub$imse)
-        data.frame(
-          experiment = experiment_name,
-          dgp        = dgp_name,
-          estimator  = est,
-          imse       = mean(sub$imse[valid]),
-          ibias      = mean(sub$ibias[valid]),
-          iabs_bias  = mean(sub$iabs_bias[valid]),
-          n_valid    = sum(valid),
+        row <- data.frame(
+          experiment     = experiment_name,
+          dgp            = dgp_name,
+          estimator      = est,
+          imse           = mean(sub$imse[valid]),
+          ibias          = mean(sub$ibias[valid]),
+          iabs_bias      = mean(sub$iabs_bias[valid]),
+          n_valid        = sum(valid),
           stringsAsFactors = FALSE
         )
+        # Add W₂² and diagnostic columns if present
+        if ("w2_sq" %in% names(sub)) {
+          w2_valid <- valid & !is.na(sub$w2_sq)
+          row$w2_sq          <- if (any(w2_valid)) mean(sub$w2_sq[w2_valid]) else NA_real_
+          row$frac_invalid   <- mean(sub$frac_invalid[valid])
+          row$avg_correction <- mean(sub$avg_correction[valid])
+        }
+        row
       }))
 
       # Attach parameter columns

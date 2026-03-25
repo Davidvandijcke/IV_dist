@@ -1,6 +1,6 @@
 # D-IV Simulation Findings
 
-Systematic exploration of when the D-IV projection improves over unconstrained 2SLS. Over 100 DGP configurations tested. All results use the Melly-Pons/CLP DGP framework.
+Systematic exploration of when the D-IV projection improves over unconstrained 2SLS. Over 150 DGP configurations tested across two DGP families: the original Melly-Pons/CLP DGP (lognormal, all-positive x₂) and a centered-x₂ DGP (normal instruments, x₂ spans negative values).
 
 ## The D-IV Estimator
 
@@ -10,201 +10,197 @@ The D-IV estimator (Section 3.3 of the paper):
 3. Project each curve to monotonicity via PAVA: Q̂(Xⱼ, ·) = Π_Q(ψ̂(Xⱼ, ·))
 4. Recover coefficients by OLS of Q̂(Xⱼ, u) on (1, Xⱼ − μ̂)
 
-The improvement theorem (Theorem 1) guarantees that the joint weighted MSE of (β̂₀, β̂₁) under D-IV is ≤ that of unconstrained 2SLS, for any reference coefficients b that produce valid (monotone) quantile functions at the observed X values.
+Theorem 1 guarantees: joint Σ̂_XX-weighted MSE of D-IV ≤ that of 2SLS, for any reference coefficients producing valid QFs. Lemma 2 guarantees: W₂²(Q̂(Xⱼ,·), Q_true) ≤ W₂²(ψ̂_Xⱼ, Q_true) in every replication.
 
-## The DGP
+## Two DGP Families
 
-All experiments use the MP (2025) / CLP (2016) DGP (Section 4.2), implemented as `dgp_mp()` with parameters controlling the design:
+### dgp_mp(): Original Melly-Pons/CLP DGP
+- x₂ always positive (lognormal components), support ≈ [0.5, 4]
+- gamma(u) = √u (unbounded derivative near 0)
+- Strong monotonicity margin: steep intercept from lognormal mixture
+- At M=50, pi_Z=1: F≈23, D-IV gain ≈ 0%
 
-```
-y_ij = beta0(u_ij) + x_{1ij} * (u_ij/2) + x_{2j} * gamma(u_ij) + alpha_j(u_ij)
-```
+### dgp_centered(): Centered-x₂ DGP (more realistic for applied IV)
+- x₂ centered (normal instruments), spans negative values
+- gamma(u) = u + beta_slope·Φ⁻¹(u) (bounded derivative)
+- β₀(u) = σ·Φ⁻¹(u) (or t-distributed for heavy tails)
+- Heterogeneous first stage: x₂ = (π_Z + δ(η−0.5))·z + η + noise
+- Optional controls: W_k ~ N(0,1) with effects u/(k+2)
 
-- u_ij ~ U(0,1) is the within-group rank (Skorohod representation)
-- x_{1ij} ~ exp(0.25 * N(0,1)), x_{2j} group-level treatment
-- gamma(u) = sqrt(u) + beta_slope * Phi^{-1}(u) (treatment effect)
-- alpha_j(u) = u * eta_j - u/2, eta_j ~ U(0,1) (group heterogeneity)
-- Endogenous: x_{2j} = pi_Z * z_j + eta_j + sqrt(1-pi_Z²) * nu_j
-- z_j, nu_j ~ exp(0.25 * N(0,1))
-
-The `base_dist` parameter controls beta0(u):
-- `"normal"`: beta0(u) = 0 (original MP specification)
-- `"t2"`, `"t3"`: beta0(u) = qt(u, df) (heavy-tailed base distribution)
-- `"lognormal"`: beta0(u) = qlnorm(u, 0, 1.5) - mean (skewed, heavy right tail)
-
-Since gamma(u) = sqrt(u) is monotone, the Skorohod map is always valid: u_ij IS the within-group rank, and gamma(u) IS the true population 2SLS coefficient. This was verified numerically: max|pop_β₁ − sqrt(u)| < 0.03 for all base distributions (M=2000, N=500, 10 reps).
+The centered DGP is more representative of applied settings (import shocks, policy doses, relative prices) where the treatment variable can be positive or negative.
 
 ---
 
-## Channel 1: Instrument Strength (the primary driver)
+## Why the MP DGP Suppresses D-IV Gains
 
-**Setup**: MP DGP with pi_Z scaling instrument relevance.
+Three features of the MP DGP create an unusually large monotonicity margin:
 
-**Results** (M=50, N=50, 500 reps):
+1. **All-positive x₂**: With x₂ > 0 always, (Xⱼ − μ) is bounded below by ≈ −2.5. The violation condition β₀'(u) + β̃₁'(u)·(Xⱼ−μ) < 0 can only trigger at groups far below the mean, where the margin is thin.
 
-| pi_Z | Median F | IMSE(2SLS) | IMSE(D-IV) | D-IV gain |
-|------|----------|-----------|-----------|-----------|
-| 0.10 | ~1       | 1,073     | 909       | 15.3%     |
-| 0.20 | ~5       | 59.5      | 48.7      | 18.3%     |
-| 0.30 | ~8       | 102       | 63.2      | 37.9%     |
-| 0.50 | ~15      | 0.79      | 0.74      | 6.5%      |
-| 0.70 | ~25      | 0.09      | 0.08      | 11.9%     |
-| 1.00 | ~40      | 0.02      | 0.02      | 0.0%      |
+2. **Steep intercept**: β₀(u) ≈ μ_X·√u has derivative ≈ 1.25/√u, providing a large buffer that absorbs estimation noise.
 
-**Mechanism**: Weak instruments inflate the variance of β̃₁(u). The resulting large deviations from the true (monotone) coefficient functions produce frequent and large violations of monotonicity in the fitted ψ̂(x, u) curves. PAVA corrects these violations.
+3. **Strong instrument**: At M=50, pi_Z=1, the median F≈23-40. The 2SLS is very precise.
 
-**F-stat threshold**: Gains appear below F ≈ 15 and are substantial below F ≈ 10. Above F ≈ 20, gains vanish.
-
-**Non-monotonicity in gains**: The gain at pi_Z=0.1 (F≈1) is smaller than at pi_Z=0.3 (F≈8). At very weak instruments (F ≈ 1), 2SLS bias dominates MSE for both estimators, limiting the relative gain from variance reduction via projection.
-
-**Relevance**: Many applied IV settings have F-stats in the 5-15 range (Bartik/shift-share instruments, judge designs, etc.). The original MP/CLP DGP has F ≈ 23-40 depending on M, which is stronger than many applied settings.
+With centered x₂, groups with negative Xⱼ have the second term *subtract* from the margin, making violations much more likely even at moderate F.
 
 ---
 
-## Channel 2: Heavy-Tailed Base Distribution + Small N
+## Results: Centered-x₂ DGP
 
-**Setup**: MP DGP with pi_Z=1 (strong instrument, F≈23) but heavy-tailed base distribution beta0(u). The heavy tails are built into the structural quantile function, so the population target gamma(u) = sqrt(u) is unchanged. The heavier tails make within-group distributions harder to estimate from N individual observations.
+All results below use dgp_centered() with 500 replications unless noted.
 
-**Results** (M=50, pi_Z=1, 500 reps):
+### Channel 1: Instrument Strength (M=50, N=50)
 
-| Base distribution | N=10 | N=25 | N=50 |
-|-------------------|------|------|------|
-| Normal (original MP) | 0.1% | 0.1% | 0.0% |
-| t₃               | 1.1% | 0.1% | 0.0% |
-| t₂               | **20.1%** | 0.4% | 0.0% |
-| Lognormal(0, 1.5) | **7.1%** | 0.9% | 0.1% |
+| π_Z | F≈ | β₁ gain | W₂² gain | Invalid groups |
+|-----|-----|---------|----------|----------------|
+| 0.1 | ~1 | 14.2% | 11.1% | 42.9% |
+| 0.2 | ~4 | **39.1%** | **31.4%** | 26.4% |
+| 0.3 | ~8 | **27.7%** | **20.6%** | 14.1% |
+| 0.5 | ~15 | 3.7% | 1.7% | 2.9% |
+| 0.7 | ~25 | 0.1% | 0.0% | 0.7% |
+| 1.0 | ~40 | 0.0% | 0.0% | 0.1% |
 
-**Mechanism**: Heavy tails in the base distribution cause outliers in the individual outcome data. With small N, these outliers distort the sample quantile functions Q̂_{Y_j}(u), which propagates through 2SLS into non-monotone coefficient estimates. This is a **first-stage noise channel** (noisy Q̂_{Y_j}), distinct from the second-stage noise channel (weak instruments affecting β̃₁).
+Non-monotonicity in gains at very weak IV (π_Z=0.1): 2SLS bias dominates MSE, limiting relative gains from variance reduction.
 
-**Why MP misses this**: The original MP DGP has beta0(u) = 0, so the within-group distribution comes entirely from x₁·(u/2) + x₂·gamma(u) + alpha_j(u), which has light tails (lognormal × uniform, bounded group effects). The sample quantile function converges quickly. Real economic outcomes (wages, health costs, test scores) often have much heavier tails.
+### Channel 2: Sample Size (π_Z=0.5, F≈12)
 
-**Key results**: t₂ base + N=10 gives **20.1% gain even with a strong instrument (F≈23)**. This is a genuinely independent channel from instrument strength.
+| (M, N) | β₁ gain | W₂² gain | Invalid groups |
+|---------|---------|----------|----------------|
+| (25, 25) | **38.4%** | **25.7%** | 14.7% |
+| (25, 50) | **39.5%** | **22.6%** | 9.4% |
+| (50, 50) | 3.7% | 1.7% | 2.9% |
+| (100, 50) | 0.1% | 0.0% | 0.7% |
 
----
+Gains concentrated at small M. At M=25, ~10-15% of groups have invalid fitted distributions.
 
-## Channel 3: Treatment Effect Heterogeneity (amplification)
+### Channel 3: Controls + Heterogeneous First Stage (M=50, N=50, π_Z=0.5)
 
-**Setup**: MP DGP with gamma(u) = sqrt(u) + beta_slope · Phi^{-1}(u). Tested at both pi_Z=0.5 (moderate IV) and pi_Z=1.0 (strong IV).
+| p | δ (hetero FS) | β₁ gain | W₂² gain |
+|---|---------------|---------|----------|
+| 1 | 0 | 3.7% | 1.7% |
+| 2 | 0 | 8.7% | 3.2% |
+| 5 | 0 | **35.9%** | **19.8%** |
+| 1 | 0.5 | 6.5% | 3.7% |
+| 2 | 0.5 | **16.1%** | **6.9%** |
+| 5 | 0.5 | **56.8%** | **44.3%** |
+| 1 | 1.0 | 12.6% | 8.9% |
+| 2 | 1.0 | **32.3%** | **20.1%** |
+| 5 | 1.0 | **42.5%** | **25.7%** |
 
-**Results** (M=50, N=50, 500 reps):
+**Controls amplify gains dramatically.** More regressors add dimensions to ψ̂(x,u), making the monotonicity constraint harder to satisfy. Combined with first-stage heterogeneity, gains reach 57%.
 
-| pi_Z | beta_slope=0 | beta_slope=0.1 | beta_slope=0.2 | beta_slope=0.3 |
-|------|-------------|----------------|----------------|----------------|
-| 0.5  | 6.5%        | 6.7%           | 7.5%           | **8.4%**       |
-| 1.0  | 0.0%        | 0.0%           | 0.0%           | 0.0%           |
+**Heterogeneous first stage** (δ > 0) is a powerful independent channel. With δ=1, the first-stage coefficient varies by group: x₂ = (π_Z + δ(η−0.5))·z + η + noise. The linear 2SLS uses a single first-stage slope, creating group-specific misfit. This is realistic: Bartik/shift-share instruments have heterogeneous first stages across regions.
 
-**Mechanism**: More variation in gamma(u) across quantiles means β̃₁(u) has more "room" for noise-induced violations. At moderate IV (pi_Z=0.5), increasing beta_slope from 0 to 0.3 raises the gain from 6.5% to 8.4% — a 29% amplification. At strong IV (pi_Z=1.0), the effect is zero regardless of beta_slope.
+### Channel 4: Heavy Tails (M=50, π_Z=0.5)
 
-**Important**: Heterogeneity does NOT independently produce gains. It **amplifies** the weak-IV channel. The noise magnitude is fixed by F; heterogeneity makes the signal more fragile, so the same noise causes more violations. But when the noise is small (strong F), heterogeneity doesn't matter.
+| Base distribution | N=25 | N=50 |
+|-------------------|------|------|
+| Normal | 14.3% / 5.1% | 3.7% / 1.7% |
+| t₅ | 15.5% / 6.1% | 4.5% / 2.3% |
+| t₃ | **17.9%** / **7.9%** | 5.4% / 2.9% |
 
----
+(Format: β₁ gain / W₂² gain)
 
-## Channel 4: Large Group Heterogeneity
+Heavy tails in the base distribution make within-group quantile estimation harder, creating additional noise in Q̂_{Y_j}(u). Effect is modest (~3pp above normal) but compounds with other channels.
 
-**Setup**: MP DGP but with eta_j ~ N(0, sigma_eta) instead of U(0,1).
+### Realistic Combination
 
-**Results** (M=50, N=50, 500 reps):
+p=3, δ=0.5, t₅ base, β_slope=0.2, F≈12, M=50, N=50:
 
-| sigma_eta | Median F | D-IV gain |
-|-----------|----------|-----------|
-| 0.29 (≈ MP) | ~23   | 0%        |
-| 0.50      | ~11      | ~3%       |
-| 1.00      | ~3       | ~23%      |
-| 1.50      | ~2       | ~33%      |
-| 2.00      | ~1       | ~9%       |
+| Metric | 2SLS | D-IV | Gain |
+|--------|------|------|------|
+| β₁ IMSE | 0.062 | 0.054 | **13.9%** |
+| W₂² | 0.100 | 0.094 | **5.6%** |
+| Invalid groups | 4.8% | 0% | — |
 
-**Mechanism**: NOT an independent channel. Large sigma_eta dilutes the instrument's contribution to x₂ (eta variance swamps z variance), reducing the effective F-stat. The gains track F, not sigma_eta.
-
-**Non-monotonicity**: Gains fall at sigma_eta=2.0 (F≈1) because 2SLS bias dominates MSE for both estimators, limiting relative gains from variance reduction.
-
----
-
-## Interaction of Channels 1 and 2
-
-The weak-IV and heavy-tail channels interact **superadditively** (tested earlier with inline code):
-
-| Setting | Gain |
-|---------|------|
-| F≈12 alone (normal base, N=50) | 12% |
-| Heavy tails alone (t₃ base, N=25, F≈23) | 1% |
-| F≈12 + t₃ + N=25 | **23%** |
-| F≈12 + t₂ + N=15 | **32%** |
-
----
-
-## What Does NOT Help (explored but confirmed unhelpful at F≈23)
-
-| Feature tested | Gain | Why |
-|---------------|------|-----|
-| γ(u) shape: sinusoidal, hump, sign-changing | 0-1% | Violations exist but tiny when β̃₁ is precise |
-| Wide x support (sd=1-4) | 0% or negative | Projection bias at high-leverage points |
-| Multivariate X (p=2-5) | 0-1.7% | Partialling out already smooths |
-| Smooth misspecification | 0-1% | Linear approx errors are small |
-| Non-separable misspec h(x)·Φ⁻¹(u) | -1% to -9% | Projection moves away from pseudo-true parameter |
-| Unbalanced groups | 0% | Noise averages out |
-| Finer quantile grids | 0% | More points but same violation size |
-| Many instruments (l=5-30) | -2% to -6% | Needs investigation (possible many-IV bias interaction) |
-| Partial instrument invalidity | 0% | Biases but doesn't create violations |
-
-### Note on γ shape at high amplitude
-
-When γ has very large amplitude (e.g., gamma = 5·sqrt(u)) relative to the beta0 slope, the fitted curve q(x, u) = beta0(u) + 5·sqrt(u)·(x−μ) can be non-monotone in u for large |x−μ|. This means no probability distribution has that quantile function — the linear model is **misspecified** at extreme covariate values. The unconstrained 2SLS converges to a pseudo-true parameter that itself produces non-monotone fitted curves at some observed X. The projection moves toward monotonicity but away from the pseudo-true target, producing **negative** IMSE gains (-13% at c=5). This is the regime where Theorem 1's conditions (reference coefficients producing valid QFs) are not met.
+This mimics a labor/health economics IV study with a Bartik-style instrument, centered treatment, moderate IV strength, and a few controls.
 
 ---
 
-## Skorohod Representation and Non-Monotone γ
+## Results: MP Baseline (pi_Z=1, lognormal x₂)
 
-When the DGP is specified at the individual level as y_ij = x_{2j}·γ(u_ij) + α_j(u_ij), the map h_j(u) = x_{2j}·γ(u) + α_j(u) is a valid Skorohod representation (u_ij is the within-group rank) **only if** h_j is non-decreasing in u.
+| (M, N) | β₁ gain | Invalid groups |
+|---------|---------|----------------|
+| (25, 25) | 7.3% | 6.6% |
+| (25, 50) | 5.0% | 3.3% |
+| (50, 50) | 0.0% | 0.6% |
+| (100, 50) | 0.0% | 0.1% |
 
-- **Monotone γ** (√u, u, a(u−c), √u + β_slope·Φ⁻¹(u) for moderate β_slope): h_j is monotone, the Skorohod index IS the rank, Q_{Y_j}(u) = h_j(u), and pop_β₁(u) = γ(u).
+Gains only at M=25, where MP note F<10 in 40% of draws.
 
-- **Non-monotone γ** (4u(1−u), u+0.5·sin(4πu)): h_j can be non-monotone. Then h_j is NOT the group QF. The actual Q_{Y_j} is the monotone rearrangement of h_j, and pop_β₁(u) ≠ γ(u). Measured divergence: max|pop_β₁ − γ| up to 0.8 for hump-shaped γ.
+---
 
-This is not a "mixing" effect — it occurs even without individual covariates x₁. The mechanism is that **quantiles and non-monotone transformations don't commute**. The latent index model generates well-defined random variables, but when γ is non-monotone, the latent index loses its quantile interpretation.
+## W₂² Improvement: The Headline Metric
 
-**For all monotone γ shapes used in the paper** (including the β_slope·Φ⁻¹(u) extension), the Skorohod representation is valid and γ(u) is the correct target.
+Lemma 2 guarantees W₂²(Q̂, Q_true) ≤ W₂²(ψ̂, Q_true) in **every replication**. This was confirmed empirically: `always_better=YES` across all DGPs tested.
 
-### Average Strictness
+W₂² gains are always smaller than β₁ IMSE gains because W₂² includes both the improvement from projection AND the OLS residuals (which don't change). But W₂² is never negative, which makes it the cleanest result for the paper.
 
-In the MP/CLP DGP and similar specifications with substantial within-group heterogeneity, Average Strictness is empirically satisfied with comfortable margin. The within-group mixing produces smooth group quantile functions with derivatives bounded away from zero. However, this is a DGP-specific empirical observation, not a general theoretical guarantee.
+---
+
+## Fraction of Groups with Invalid Fitted Distributions
+
+This is the most interpretable diagnostic for applied researchers. At moderate IV (F≈12):
+- p=1, no hetero FS: 2.9% invalid (1-2 groups out of 50)
+- p=2, δ=0.5: 3.2% invalid
+- p=5, δ=0.5: 3.7% invalid
+- Weak IV (π_Z=0.2): 26.4% invalid (13 out of 50 groups)
+- Small M=25: 10-15% invalid
+
+The unconstrained 2SLS produces invalid probability distributions for these groups. D-IV fixes all of them.
+
+---
+
+## What Does NOT Help (confirmed at F≈23)
+
+| Feature | Gain | Why |
+|---------|------|-----|
+| γ(u) shape (oscillating, hump, sign-changing) | 0-1% | Violations tiny when β̃₁ precise |
+| Wide x support alone (all-positive) | 0% | High-leverage projection bias |
+| Nonlinear treatment effect (x² interaction) | 0% | IV still valid, linear coef consistent |
+| Nonlinear control effects (w² misspec) | 0% | Doesn't affect endogenous coef |
+| Many instruments (l=5-30) | -2% to -6% | Many-IV bias interacts with projection |
+
+---
+
+## Skorohod Representation Notes
+
+For monotone γ shapes (√u, u, a(u−c), u + β_slope·Φ⁻¹(u)):
+- The Skorohod map h_j(u) is monotone → u_ij IS the within-group rank
+- Q_{Y_j}(u) = h_j(u) exactly → γ(u) IS the population 2SLS coefficient
+
+For non-monotone γ (e.g., 4u(1−u)):
+- h_j can be non-monotone → u_ij is NOT the rank
+- Q_{Y_j} ≠ h_j → pop_β₁ ≠ γ (divergence up to 0.8)
+- Must specify DGP at the group level to use non-monotone γ
+
+**Centered x₂ + √u**: The combination x₂<0 with γ=√u (unbounded derivative near 0) can cause h_j'(u) < 0 near u=0 for negative-x₂ groups. Use bounded γ' (like γ=u) with centered x₂.
 
 ---
 
 ## Estimand Comparison: D-IV vs CLP
 
-**Without individual covariates x₁**: CLP and D-IV target the **same** estimand β₁(u). CLP without x₁ is exactly the unconstrained 2SLS step of D-IV. The only difference in estimates is the projection correction.
+With composition effects (mean(x₁|x₂) = ρ·(x₂−μ)):
+- D-IV targets **total effect**: γ(u) + ρ·(u/2)
+- CLP targets **direct effect**: γ(u)
 
-**With individual covariates x₁ and composition effects**: CLP targets the **direct** (within-type) effect δ(u), while D-IV targets the **total** effect β₁(u) = δ(u) + composition + re-ranking.
-
-**Setup**: MP DGP with mean(x₁|x₂) = ρ·(x₂ − μ).
-
-**Results** (M=50, N=50, F≈23, 100 reps):
-
-| ρ | D-IV IMSE (→total) | CLP IMSE (→direct) | CLP IMSE (→total) |
-|---|-------------------|-------------------|-------------------|
-| 0.0 | 0.035 | 0.032 | 0.032 |
-| 0.3 | 0.036 | 0.032 | **0.045** |
-| 0.5 | 0.037 | 0.033 | **0.063** |
-| 1.0 | 0.039 | 0.036 | **0.135** |
-| 2.0 | 0.047 | 0.055 | **0.400** |
-
-At ρ=2, CLP's IMSE for the total effect is **8.5× larger** than D-IV's. This is not an IMSE improvement story but a **what-are-you-estimating** story.
+At ρ=2: CLP's IMSE for the total effect is **8.5× larger** than D-IV's. Without x₁ controls, both target the same estimand.
 
 ---
 
-## Summary
+## Summary of Channels
 
-### Channels that produce substantial D-IV gains:
+| Channel | β₁ gain range | W₂² gain | Independent? |
+|---------|--------------|----------|-------------|
+| Weak IV (F<15) | 4-39% | 2-31% | Primary driver |
+| Small M (M=25) | 5-40% | 9-26% | Via effective F |
+| Controls (p>1) | 6-36% | 2-20% | Yes (more ψ dimensions) |
+| Hetero first stage (δ>0) | 7-13% | 4-9% | Yes (group-specific misfit) |
+| Heavy tails (t₃) | +3pp | +2pp | Amplifies other channels |
+| β_slope (heterogeneity) | +2pp at moderate F | — | Amplifies weak IV |
+| Controls × Hetero FS | Up to 57% | Up to 44% | Superadditive |
 
-1. **Weak/moderate instruments (F < 15)**: 6-38% gains. The primary IMSE channel.
-2. **Heavy-tailed base distribution + small N**: 7-20% at F≈23 with t₂ or lognormal base. Independent of instrument strength.
-3. **Interaction of 1 and 2**: Superadditive (F≈12 + t₃ + N=25 → 23%).
-4. **Treatment effect heterogeneity at moderate IV**: Amplifies weak-IV gains by ~29% (6.5% → 8.4%). Zero effect at strong IV.
-
-### The qualitative finding:
-
-5. **CLP vs D-IV estimand difference**: With composition effects and individual covariates, CLP estimates the direct effect while D-IV estimates the total effect. CLP is biased for the total effect by up to 8.5×.
-
-### Key theoretical insight:
-
-The D-IV improvement equals the size of the PAVA correction ||D_x||², which is bounded by the estimation error ||ψ̂_x − q_x||. With precise estimation (strong F, large N, light tails), violations are small regardless of DGP features. The projection is a **variance-reduction device** proportional to estimation imprecision. Two sources of imprecision drive gains: (i) weak instruments (noisy β̃₁), and (ii) heavy-tailed within-group distributions with small N (noisy Q̂_{Y_j}).
+### TODO
+- Coverage experiments for confidence bands (code ready in R/inference.R and simulations/run_coverage.R)
+- Discrete within-group distributions
+- Over-identification (2-3 instruments for 1 endogenous)

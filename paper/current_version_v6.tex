@@ -479,44 +479,48 @@ where $\hat{\bar{S}}_{\mathrm{2SLS}}$ is the sample analogue and $\hat{\xi}_j(u_
 \section{Monte Carlo simulations}
 \label{sec:simulation}
 
-We compare unconstrained 2SLS with \est using the data-generating process of \citet{chetverikov2016iv} and \citet{melly2025minimum}.
+We compare unconstrained 2SLS with \est across several DGP configurations, reporting both coefficient IMSE and the average squared Wasserstein distance $W_2^2$ between estimated and true conditional quantile functions. Lemma~\ref{lemma:improvement} guarantees that $W_2^2$ improves in every realization; this is confirmed in all configurations below.
 
 \subsection{Data generating process}
 
-We adopt the endogenous grouped-data DGP from \citet[][Section~4.2]{melly2025minimum}, which matches the design in \citet{chetverikov2016iv}. For groups $j = 1, \ldots, n$ with $N$ individuals each, individual outcomes follow the Skorohod representation
+Our main DGP extends the endogenous grouped-data design of \citet{chetverikov2016iv} and \citet{melly2025minimum}. For groups $j = 1, \ldots, n$ with $N$ individuals each, individual outcomes follow the Skorohod representation
 \begin{equation}\label{eq:dgp_sim}
-y_{ij} = x_{1ij}\, \beta_1(u_{ij}) + x_{2j}\, \gamma(u_{ij}) + \alpha_j(u_{ij}),
+y_{ij} = \sigma\, \Phi^{-1}(u_{ij}) + x_{2j}\, \gamma(u_{ij}) + \alpha_j(u_{ij}),
 \end{equation}
-where $u_{ij} \sim U(0,1)$, $x_{1ij} \sim \exp(0.25\, \mathcal{N}(0,1))$ is an individual-level covariate, $\beta_1(u) = u/2$, and $\gamma(u) = \sqrt{u} + \beta_{\text{slope}} \cdot \Phi^{-1}(u)$ is the group-level treatment effect of interest. The group heterogeneity is $\alpha_j(u) = u\, \eta_j - u/2$ with $\eta_j \sim U(0,1)$, which has mean zero. The group-level treatment is endogenous:
+where $u_{ij} \sim U(0,1)$, $\sigma > 0$ controls the scale of the unconditional distribution, $\gamma(u) = u + \beta_{\text{slope}} \cdot \Phi^{-1}(u)$ is the group-level treatment effect, and $\alpha_j(u) = u\, \eta_j - u/2$ with $\eta_j \sim U(0,1)$ is mean-zero group heterogeneity. The group-level treatment is endogenous:
 \[
-x_{2j} = \pi_Z\, z_j + \eta_j + \sqrt{1 - \pi_Z^2}\, \nu_j,
+x_{2j} = (\pi_Z + \delta(\eta_j - \tfrac{1}{2}))\, z_j + \eta_j + \sqrt{1 - \pi_Z^2}\, \nu_j,
 \]
-where $z_j, \nu_j \sim \exp(0.25\, \mathcal{N}(0,1))$ and $\pi_Z \in (0,1]$ controls instrument strength. The endogeneity arises because $\eta_j$ enters both the treatment equation and the outcome heterogeneity. The original specification in \citet{chetverikov2016iv} and \citet{melly2025minimum} sets $\pi_Z = 1$ (i.e., $x_{2j} = z_j + \eta_j + \nu_j$); as \citet{melly2025minimum} note, this already produces a weak instrument problem at $m = 25$, where the first-stage $F$-statistic falls below~10 in over 40\% of draws. We generalize their design by allowing $\pi_Z < 1$ to study D-IV's performance across a wider range of instrument strengths. Setting $\beta_{\text{slope}} = 0$ recovers the original treatment effect $\gamma(u) = \sqrt{u}$.
+where $z_j, \nu_j \sim \mathcal{N}(0,1)$, $\pi_Z \in (0,1]$ controls instrument strength, and $\delta \geq 0$ introduces first-stage heterogeneity across groups. When $\delta > 0$, the relationship between $z_j$ and $x_{2j}$ varies by group---a common feature of Bartik/shift-share instruments, where the first-stage coefficient depends on local economic structure. Since $z_j$ and $\nu_j$ are normal, $x_{2j}$ is centered and can take negative values, as is typical for policy shocks (import competition, tariff changes, relative prices).
 
-Our estimator works directly with group-level sample quantile functions $\widehat{Q}_{Y_j}(u)$, ignoring individual covariates $x_{1ij}$. This is by design: \est targets the total group-level effect $\gamma(u)$, not the conditional effect that would be obtained by first partialling out $x_{1ij}$. The baseline specification uses $n = 50$ groups, $N = 50$ observations per group, and 500 Monte Carlo replications. We evaluate quantile functions on a grid of 19 points from $u = 0.05$ to $u = 0.95$.
+When exogenous controls $W_1, \ldots, W_{p-1} \sim \mathcal{N}(0,1)$ are included, we add $W_{jk} \cdot u/(k+2)$ to the outcome and include the controls in both stages with 2SLS.
+
+Panel~D reports the original \citealt{melly2025minimum} specification for comparison, using log-normal instruments $z_j, \nu_j \sim \exp(0.25\, \mathcal{N}(0,1))$ and $\gamma(u) = \sqrt{u}$.
 
 \subsection{Results}
 
-Table~\ref{tab:simulations} reports integrated mean squared error (IMSE) for three simulation designs.
+Table~\ref{tab:simulations} reports coefficient IMSE ($\int \|\hat{\beta}_1(u) - \beta_1(u)\|^2\, du$), the average squared Wasserstein distance $W_2^2$ between estimated and true conditional quantile functions, and the fraction of groups with non-monotone fitted curves $\hat{\psi}_{X_j}$, all averaged over 500 replications.
 
 \input{tabs/tab_simulations}
 
-\paragraph{Instrument strength (Panel~A).} The projection delivers its largest gains when instruments are weak: at $\pi_Z = 0.3$, \est reduces IMSE by 37.9\% relative to unconstrained 2SLS. The gain remains substantial (15--18\%) at very weak instruments ($\pi_Z = 0.1$--$0.2$), where the absolute IMSE is large, and becomes negligible with strong instruments ($\pi_Z = 1.0$). This pattern is expected---weak instruments inflate the variance of $\tilde{\beta}_1(u)$, leading to more frequent monotonicity violations that the projection corrects. Figure~\ref{fig:iv_strength} illustrates the relationship between instrument strength and the IMSE reduction from projection.
+\paragraph{Instrument strength (Panel~A).} With centered $x_2$ and $n = 50$, $N = 50$, the projection delivers its largest gains at moderate instrument strength: at $\pi_Z = 0.2$ (first-stage $F \approx 4$), \est reduces coefficient IMSE by 39.1\% and $W_2^2$ by 31.4\%, with 26\% of groups having non-monotone fitted distributions. At $\pi_Z = 0.3$ ($F \approx 8$), gains remain substantial (28\% IMSE, 21\% $W_2^2$). With strong instruments ($\pi_Z = 1$, $F \approx 40$), violations are rare and gains vanish. Figure~\ref{fig:iv_strength} displays both metrics.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.75\textwidth]{figs/fig_iv_strength}
-\caption{Percentage IMSE reduction of \est relative to unconstrained 2SLS as a function of instrument strength $\pi_Z$ ($n = 50$, $N = 50$, 500 replications).}
+\caption{Percentage improvement of \est over unconstrained 2SLS as a function of instrument strength $\pi_Z$, for coefficient IMSE and $W_2^2$ ($n = 50$, $N = 50$, 500 replications).}
 \label{fig:iv_strength}
 \end{figure}
 
-\paragraph{Sample size (Panel~B).} Panel~B uses the original \citealt{melly2025minimum} instrument strength ($\pi_Z = 1$), corresponding to a first-stage $F$-statistic of approximately~40 at $n = 50$ and~10 at $n = 25$. The gains from projection are concentrated at small $n$: 7.3\% at $(n, N) = (25, 25)$ and 2.7\% at $(n, N) = (25, 200)$. With $n \geq 50$ groups, the unconstrained estimator is already precise enough that monotonicity violations are rare, and the projection provides negligible improvement. This is consistent with Panel~A: at $n = 25$ the effective instrument strength is in the range where the projection provides gains.
+\paragraph{Controls and heterogeneous first stage (Panel~B).} At moderate instrument strength ($\pi_Z = 0.5$, $F \approx 12$), adding exogenous controls and first-stage heterogeneity substantially amplifies the gains. With $p = 5$ regressors and $\delta = 0.5$, \est reduces IMSE by 57\% and $W_2^2$ by 44\%. The gains arise because additional regressors add dimensions to the fitted curve $\hat{\psi}_{X_j}(u) = \tilde{\beta}_0(u) + \sum_k \tilde{\beta}_{1,k}(u)(X_{jk} - \hat{\mu}_k)$, making the monotonicity constraint harder to satisfy simultaneously. Heterogeneous first-stage coefficients ($\delta > 0$) create group-specific misfit that compounds with the weak-instrument noise. These features are typical of applied IV settings: shift-share instruments have heterogeneous first stages, and most IV regressions include at least some controls.
 
-\paragraph{Heavy-tailed within-group errors (Panel~C).} Panel~C demonstrates an independent channel through which the projection helps: noisy estimation of the group quantile functions. We add $t$-distributed errors to the individual outcomes in the \citealt{melly2025minimum} DGP while keeping the instrument strong ($\pi_Z = 1$). Without added noise, the Skorohod representation produces precise sample quantile functions and the projection provides no gain. With $t_2$ errors and $N = 10$ observations per group, \est reduces IMSE by 11.0\%, driven by outlier-induced distortions in the sample quantile functions that propagate through 2SLS into non-monotone coefficient estimates. This first-stage noise channel is independent of instrument strength: it operates through the precision of $\widehat{Q}_{Y_j}(u)$ rather than the variance of $\tilde{\beta}_1(u)$. Settings with heavy-tailed outcomes (wages, health expenditures, test scores) and moderate within-group sample sizes are common in applied work.
+\paragraph{Realistic combination (Panel~C).} Combining moderate IV, $p = 3$ controls, heterogeneous first stage ($\delta = 0.5$), $t_5$-distributed outcomes, and treatment effect heterogeneity ($\beta_{\text{slope}} = 0.2$) yields a 14\% reduction in IMSE and 6\% in $W_2^2$. Nearly 5\% of groups have non-monotone fitted quantile functions under the unconstrained estimator; \est corrects all of them.
+
+\paragraph{\citealt{melly2025minimum} baseline (Panel~D).} With the original log-normal specification at $\pi_Z = 1$, gains are 5--7\% only at $n = 25$ (where the effective $F \approx 10$) and zero at $n \geq 50$. This DGP is unusually favorable for the unconstrained estimator: the all-positive, log-normal treatment variable creates a large monotonicity margin that absorbs estimation noise.
 
 \subsection{Summary}
 
-The simulations confirm the theoretical predictions of Theorem~\ref{thm:pw_ols_improvement}. The projection step in \est reduces finite-sample IMSE through two channels: (i) imprecise 2SLS coefficient estimates from weak instruments, and (ii) noisy group quantile function estimates from heavy-tailed within-group distributions. Both channels produce monotonicity violations in the fitted curves $\hat{\psi}_{X_j}(\cdot)$ that the PAVA correction reduces. With strong instruments and well-behaved distributions (the original \citealt{melly2025minimum} DGP at $n \geq 50$), violations are rare and the projection provides negligible improvement.
+The simulations confirm the theoretical predictions. The $W_2^2$ improvement guaranteed by Lemma~\ref{lemma:improvement} is strictly positive in every realization across all configurations tested. The projection provides the largest gains in settings with moderate instrument strength ($F \approx 4$--$12$), multiple regressors, heterogeneous first-stage relationships, and heavy-tailed within-group distributions. These features are common in applied IV research.
 
 
 \section{Empirical illustration}

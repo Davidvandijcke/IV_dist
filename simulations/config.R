@@ -2,12 +2,7 @@
 # Simulation Configuration
 # =============================================================================
 #
-# Four experiments, all built on the Melly-Pons DGP framework.
-#
-#   1. iv_strength    - Varying instrument strength (the main result)
-#   2. sample_size    - Varying (M, N) at pi_Z=1 (MP-comparable)
-#   3. heavy_tails    - Heavy-tailed base distribution + small N (independent channel)
-#   4. heterogeneity  - Varying beta_slope at moderate IV (amplification channel)
+# Experiments using both the MP DGP (dgp_mp) and centered-x₂ DGP (dgp_centered).
 #
 # =============================================================================
 
@@ -18,20 +13,16 @@ ESTIMATOR_REGISTRY <- list(
   "div"  = "estimate_div"
 )
 
-
 EXPERIMENTS <- list(
 
   # -----------------------------------------------------------------------
-  # 1. IV strength: the key result.
+  # 1. IV strength: centered x₂, vary pi_Z
   # -----------------------------------------------------------------------
   iv_strength = list(
-    dgps = "dgp_mp",
+    dgps = "dgp_centered",
     param_grid = data.frame(
-      M             = 50,
-      N             = 50,
-      endogenous    = TRUE,
-      heterogeneity = TRUE,
-      pi_Z          = c(0.1, 0.2, 0.3, 0.5, 0.7, 1.0),
+      M    = 50, N = 50,
+      pi_Z = c(0.1, 0.2, 0.3, 0.5, 0.7, 1.0),
       stringsAsFactors = FALSE
     ),
     estimators = c("2sls", "div"),
@@ -40,16 +31,14 @@ EXPERIMENTS <- list(
   ),
 
   # -----------------------------------------------------------------------
-  # 2. Sample size at pi_Z=1 (direct comparison with MP/CLP).
+  # 2. Sample size: centered x₂, F≈12
   # -----------------------------------------------------------------------
   sample_size = list(
-    dgps = "dgp_mp",
+    dgps = "dgp_centered",
     param_grid = expand.grid(
-      M             = c(25, 50, 100, 200),
-      N             = c(25, 50, 100, 200),
-      endogenous    = TRUE,
-      heterogeneity = TRUE,
-      pi_Z          = 1.0,
+      M    = c(25, 50, 100, 200),
+      N    = c(25, 50, 100, 200),
+      pi_Z = 0.5,
       stringsAsFactors = FALSE
     ),
     estimators = c("2sls", "div"),
@@ -58,20 +47,32 @@ EXPERIMENTS <- list(
   ),
 
   # -----------------------------------------------------------------------
-  # 3. Heavy-tailed base distribution: independent channel via noisy group
-  #    QF estimation. Strong instrument (pi_Z=1).
-  #    The heavy tails are built into beta0(u) (the base quantile function),
-  #    so the population target gamma(u) = sqrt(u) is unchanged.
+  # 3. Controls + heterogeneous first stage
+  # -----------------------------------------------------------------------
+  controls = list(
+    dgps = "dgp_centered",
+    param_grid = expand.grid(
+      M         = 50, N = 50,
+      pi_Z      = 0.5,
+      p         = c(1, 2, 3, 5),
+      hetero_fs = c(0, 0.5, 1.0),
+      stringsAsFactors = FALSE
+    ),
+    estimators = c("2sls", "div"),
+    q_grid     = Q_GRID,
+    n_reps     = 500
+  ),
+
+  # -----------------------------------------------------------------------
+  # 4. Heavy tails (centered x₂)
   # -----------------------------------------------------------------------
   heavy_tails = list(
-    dgps = "dgp_mp",
+    dgps = "dgp_centered",
     param_grid = expand.grid(
-      M             = 50,
-      N             = c(10, 25, 50),
-      endogenous    = TRUE,
-      heterogeneity = TRUE,
-      pi_Z          = 1.0,
-      base_dist     = c("normal", "t3", "t2", "lognormal"),
+      M         = 50,
+      N         = c(25, 50),
+      pi_Z      = 0.5,
+      base_dist = c("normal", "t5", "t3"),
       stringsAsFactors = FALSE
     ),
     estimators = c("2sls", "div"),
@@ -80,19 +81,36 @@ EXPERIMENTS <- list(
   ),
 
   # -----------------------------------------------------------------------
-  # 4. Treatment effect heterogeneity at moderate IV (pi_Z=0.5).
-  #    Shows that beta_slope amplifies weak-IV gains.
-  #    Also run at pi_Z=1 to confirm no effect with strong instruments.
+  # 5. Realistic combination
+  #    p=3, hetero_fs=0.5, t5 base, beta_slope=0.2, F≈12
   # -----------------------------------------------------------------------
-  heterogeneity = list(
+  realistic = list(
+    dgps = "dgp_centered",
+    param_grid = data.frame(
+      M          = 50, N = 50,
+      pi_Z       = 0.5,
+      p          = 3,
+      hetero_fs  = 0.5,
+      base_dist  = "t5",
+      beta_slope = 0.2,
+      stringsAsFactors = FALSE
+    ),
+    estimators = c("2sls", "div"),
+    q_grid     = Q_GRID,
+    n_reps     = 500
+  ),
+
+  # -----------------------------------------------------------------------
+  # 6. MP baseline comparison (pi_Z=1, original DGP)
+  # -----------------------------------------------------------------------
+  mp_baseline = list(
     dgps = "dgp_mp",
     param_grid = expand.grid(
-      M             = 50,
-      N             = 50,
+      M             = c(25, 50, 100),
+      N             = c(25, 50),
       endogenous    = TRUE,
       heterogeneity = TRUE,
-      pi_Z          = c(0.5, 1.0),
-      beta_slope    = c(0.0, 0.1, 0.2, 0.3),
+      pi_Z          = 1.0,
       stringsAsFactors = FALSE
     ),
     estimators = c("2sls", "div"),
