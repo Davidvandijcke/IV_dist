@@ -28,6 +28,7 @@ _archive/
 overleaf_repo/
 simulations/results/
 results/
+data/
 
 # Plots (generated)
 *.png

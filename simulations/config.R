@@ -35,7 +35,7 @@ EXPERIMENTS <- list(
       heterogeneity = c(FALSE, TRUE,  TRUE),
       stringsAsFactors = FALSE
     ),
-    estimators = c("2sls", "div", "div_endpoint"),
+    estimators = c("2sls", "div"),
     q_grid     = Q_GRID,
     n_reps     = 1000
   ),
@@ -55,7 +55,7 @@ EXPERIMENTS <- list(
       pi_Z          = c(0.1, 0.2, 0.3, 0.5, 0.7, 1.0),
       stringsAsFactors = FALSE
     ),
-    estimators = c("2sls", "div", "div_endpoint"),
+    estimators = c("2sls", "div"),
     q_grid     = Q_GRID,
     n_reps     = 500
   ),
@@ -97,7 +97,7 @@ EXPERIMENTS <- list(
       beta_slope    = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.3),
       stringsAsFactors = FALSE
     ),
-    estimators = c("2sls", "div", "div_endpoint"),
+    estimators = c("2sls", "div"),
     q_grid     = Q_GRID,
     n_reps     = 500
   )

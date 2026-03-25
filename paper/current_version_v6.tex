@@ -14,6 +14,8 @@
 }
 \usepackage{setspace}
 \usepackage{enumerate}
+\usepackage{graphicx}
+\usepackage{booktabs}
 
 
 \usepackage[round]{natbib} 
@@ -286,7 +288,7 @@ The projection guarantees that each $\hat{Q}(X_j, \cdot)$ is a valid quantile fu
 
 \nddvd{TODO: streamline $\hat Q$ and $\hat q$ usage}
 
-The projection step in \est can only decrease the estimation error at each evaluation point. This is a classical property of isotonic projections \citep{Robertson1988}.
+In this section, we study the finite sample properties of the projection step in $\est$ and show that it decreases the estimation error. The first lemma shows that the projection step decreases the estimation error in the quantile function. This is a classical property of isotonic projections \citep{Robertson1988}.
 
 \begin{lemma}[Improvement in estimation: quantile function]\label{lemma:improvement}
 Suppose that $\hat{Q}$ is an estimator of some true quantile function $Q_0 \in \mathcal{Q}$. Then $\hat{Q}^* = \Pi_{\mathcal{Q}}(\hat{Q})$ satisfies $\| \hat{Q}^*-Q_0\|_{L^p} \leq\|\hat{Q}-Q_0\|_{L^p}$ for all $p \in[1, \infty]$.
@@ -295,7 +297,9 @@ Suppose that $\hat{Q}$ is an estimator of some true quantile function $Q_0 \in \
 See Corollary 2.4 in \citet{lin2019projection}, which proves the functional version of the classical result in \citet[Theorem 1.6.1]{Robertson1988}; see also \citet[Theorem 2.1]{groeneboom2014nonparametric}.
 \end{proof}
 
-Applied to \est, this result implies that at each observed $X_j$, the projected $\hat{Q}(X_j, \cdot) = \Pi_{\mathcal{Q}}(\hat{\psi}_{X_j})$ is closer to any valid quantile function than the unprojected $\hat{\psi}_{X_j}$, in every $L^p$ norm. We now show how this pointwise improvement translates into improvements for the coefficient functions recovered by OLS. Throughout, let $b=(b_0,b_1)$ with $b_0\colon[0,1]\to\R$ and $b_1\colon[0,1]\to\R^p$ denote any \emph{reference coefficients} such that $q_b(X_j,\cdot):=b_0(\cdot)+b_1(\cdot)^{\!\T}(X_j-\hat\mu_X)$ is a valid quantile function for all relevant observations. No assumption on the linear model~\eqref{eq:linear_model} is required for any of the results in this subsection.
+Applied to \est, this result implies that at each observed $X_j$, the projected $\hat{Q}(X_j, \cdot) = \Pi_{\mathcal{Q}}(\hat{\psi}_{X_j})$ is closer to any valid quantile function than the unprojected $\hat{\psi}_{X_j}$, in every $L^p$ norm. 
+
+Next, we show that this improvement translates into finite sample improvements for the proposed estimator of the coefficient functions, which are often the main objects of interest. Throughout, let $b=(b_0,b_1)$ with $b_0\colon[0,1]\to\R$ and $b_1\colon[0,1]\to\R^p$ denote any \emph{reference coefficients} such that $q_b(X_j,\cdot):=b_0(\cdot)+b_1(\cdot)^{\!\T}(X_j-\hat\mu_X)$ is a valid quantile function for all relevant observations.\kw{replace ``all relevant observations'' with almost surely?} No assumption on the linear model~\eqref{eq:linear_model} is required for any of the results in this subsection. \kw{this last sentence, should we add it right after Thm 1 stating? and can we say ``We emphasize that Thm 1 does not rely on assuming the linear model (1)?''}
 
 
 \begin{theorem}[Improvement in estimation: joint coefficients]\label{thm:pw_ols_improvement}
@@ -308,9 +312,13 @@ where $\hat{\Sigma}_{XX} = \frac{1}{n}\sum_{j=1}^n (X_j - \hat{\mu}_X)(X_j - \ha
 \|f\|_{\hat{\Sigma}_{XX}, L^2}^2 := \int_0^1 f(u)^{\!\T}\, \hat{\Sigma}_{XX}\, f(u)\, \dd u.
 \]
 \end{theorem}
+\kw{we didin't define $\tilde\beta$, right?}
 
+The left-hand side of~\eqref{eq:pw_improvement} equals $(1/n)\sum_j W_2^2(\hat{Q}(X_j, \cdot), q_b(X_j, \cdot))$ minus the integrated OLS residual sum of squares: the projected Fr\'echet barycenters are on average closer to the target conditional distributions in Wasserstein distance. \kw{I didn't follow this first sentence here}
 
-The left-hand side of~\eqref{eq:pw_improvement} equals $(1/n)\sum_j W_2^2(\hat{Q}(X_j, \cdot), q_b(X_j, \cdot))$ minus the integrated OLS residual sum of squares: the projected Fr\'echet barycenters are on average closer to the target conditional distributions in Wasserstein distance. The bound is a weighted joint improvement in $(b_0, b_1)$; it does not guarantee improvement of any $b_{1,k}$ separately. The following results provide conditions under which the slope coefficients also improve separately. 
+The bound in Theorem \ref{thm:pw_ols_improvement} is a weighted joint improvement for estimating$(b_0, b_1)$; it does not guarantee improvement for estimating any $b_{1,k}$ separately. The following results provide conditions under which the slope coefficients also improve separately. 
+
+\kw{i have a conceptual question. is $b$ unique? anbd should we not write everything in terms of the true coefficients defined in the linear model, which we target? (I understand why we are doing what we are doing, we are just claiming that it is closer to a valid quantile function, but if this is not unique, then we might be closer to something that is further away from the truth). UPDATE: I just realized that this is explained in Remark 2 blow. Given my confusion early on, i might add some of the discussion on the target coefficients earlier, or at least signpost it. wdyt?}
 
 To isolate individual slope coefficients, we use the Frisch--Waugh--Lovell (FWL) decomposition and the variational characterization of the isotonic projection. Let $C$ be the $n\times p$ matrix with rows $(X_j-\hat\mu_X)^{\!\T}$, write $c_k$ for its $k$-th column and $C_{-k}$ for $C$ with column $k$ removed. Define the FWL residual $r_k:=M_{-k}c_k$ with $M_{-k}:=I_n-C_{-k}(C_{-k}^{\!\T} C_{-k})^{-1}C_{-k}^{\!\T}$, let $r_{jk}$ denote its $j$-th entry, and set $J_k:=\{j\le n:r_{jk}\neq 0\}$ and $\hat v_k:=\frac{1}{n}\sum_{j=1}^n r_{jk}^2>0$. Let $\pi_k$ denote the coefficient vector from the sample linear projection of $c_k$ on $C_{-k}$, so that $c_k=C_{-k}\pi_k+r_k$. For a given target $b$, define the \emph{nuisance estimation error}
 \begin{equation}\label{eq:ejk}
@@ -329,7 +337,7 @@ which collects all estimation errors \emph{except} the error in the $k$-th slope
 \;=\;
 q_b(X_j,u)\;+\;e_{jk}(u)\;+\;r_{jk}\bigl(\tilde\beta_{1,k}(u)-b_{1,k}(u)\bigr),
 \end{equation}
-which separates the unconstrained fitted curve into the monotone target, the nuisance error, and the $k$-th slope error along $r_{jk}$.
+which separates the unconstrained fitted curve into the monotone target \kw{i didn't understand what fitted curve onto the monotone target means here}, the nuisance error, and the $k$-th slope error along $r_{jk}$.
 
 
 \begin{proposition}[Improvement in estimation: isolated coefficients]\label{prop:coord_improvement}
@@ -345,11 +353,11 @@ where $D_{X_j}(u):=\hat{Q}(X_j,u)-\hat\psi_{X_j}(u)$ is the projection correctio
 \end{proposition}
 
 
-The bound~\eqref{eq:coord_bound_general} decomposes the change in $k$-th coefficient error into a \emph{projection gain} $\frac{1}{n\hat v_k}\sum_{j\in J_k}\|D_{X_j}\|^2_{L^2}$, which is always non-negative, and a \emph{nuisance cross-term} $\frac{2}{n\hat v_k}\sum_{j\in J_k}\langle D_{X_j}, e_{jk}\rangle_{L^2}$, which captures the interaction between projection corrections and nuisance estimation errors and can be negative or positive. Improvement obtains whenever the nuisance cross-term is positive or when it is negative but does not overwhelm the projection gain. The following corollary gives a sufficient condition that eliminates the nuisance cross-term entirely.
+The bound~\eqref{eq:coord_bound_general} decomposes the change in $k$-th coefficient error into a \emph{projection gain} $\frac{1}{n\hat v_k}\sum_{j\in J_k}\|D_{X_j}\|^2_{L^2}$, which is always non-negative, and a \emph{nuisance cross-term} $\frac{2}{n\hat v_k}\sum_{j\in J_k}\langle D_{X_j}, e_{jk}\rangle_{L^2}$, which captures the interaction between projection corrections and nuisance estimation errors and can be negative or positive. An improvement obtains whenever the nuisance cross-term is positive or when it is negative but does not overwhelm the projection gain. The following corollary gives a sufficient condition that eliminates the nuisance cross-term entirely, thus guaranteeing an improvement.
 
-\begin{corollary}[Sufficient condition for coefficientwise improvement]
+\begin{corollary}[Sufficient condition for coefficient-wise improvement]
 \label{cor:coord_sufficient}
-Under the setup of Proposition~\ref{prop:coord_improvement}, if the nuisance errors do not destroy the monotonicity of the target quantile functions, i.e.,
+Under the setup of Proposition~\ref{prop:coord_improvement}, if the nuisance errors do make the target quantile functions non-monotonic, i.e.,
 \begin{equation}\label{eq:Ak_feas}
 q_b(X_j,\cdot)+e_{jk}(\cdot)\in\mathcal Q
 \qquad\text{for every }j\in J_k,
@@ -367,10 +375,10 @@ then the nuisance cross-term in~\eqref{eq:coord_bound_general} is eliminated and
 
 
 
-
+\kw{i might actually incorporate these remarks into the main text. it feels like they make for a good discussion. Rem 2, I might bring a bit earlier as mentioned above. wdyt?}
 \begin{remark}[Interpretation of the sufficient condition]
 \label{rem:coord_interpretation}
-Through the decomposition~\eqref{eq:decomp_identity}, condition~\eqref{eq:Ak_feas} requires that the error in the $k$-th slope along the identifying variation $r_{jk}$ is \emph{necessary} for any monotonicity violations in $\hat\psi_{X_j}$: the nuisance errors $e_{jk}$ may erode the monotonicity margin of $q_b(X_j,\cdot)$, but so long as they do not destroy it entirely, the projection corrections are fixing violations attributable to the $\beta_{1,k}$ error. Equivalently,~\eqref{eq:Ak_feas} asks that $q_b(X_j,\cdot)$ increases steeply enough to absorb whatever local decreases $e_{jk}$ introduces. Since every term in $e_{jk}$ is $O_p(n^{-1/2})$ uniformly in $u$ and $j$, the condition holds asymptotically whenever the target quantile functions have slopes bounded away from zero. The latter condition is natural insofar it is also required for uniform convergence of the estimators, as formalized in Assumption~\ref{asspt:average_strictness} below. In the scalar case $p=1$, there is no partialling out ($r_{j1}=X_j-\hat\mu_X$), the nuisance slope term in $e_{j1}$ vanishes, and~\eqref{eq:Ak_feas} reduces to $q_b(X_j,\cdot)\in\mathcal Q$, which is simply the assumed monotonicity of the target.
+Through the decomposition~\eqref{eq:decomp_identity}, condition~\eqref{eq:Ak_feas} requires that the error in the $k$-th slope along the identifying variation $r_{jk}$ is \emph{necessary} for any monotonicity violations in $\hat\psi_{X_j}$: the nuisance errors $e_{jk}$ may erode the monotonicity margin of $q_b(X_j,\cdot)$, but so long as they do not destroy it entirely, the projection corrections are fixing violations attributable to the $\beta_{1,k}$ error. Equivalently,~\eqref{eq:Ak_feas} asks that $q_b(X_j,\cdot)$ increases steeply enough to absorb whatever local decreases $e_{jk}$ introduces. Since every term in $e_{jk}$ is $O_p(n^{-1/2})$ uniformly in $u$ and $j$, the condition holds asymptotically whenever the target quantile functions have slopes bounded away from zero. \kw{what results guarantees uniformity wrt $j$?}The latter condition is natural insofar it is also required for uniform convergence of the estimators, as formalized in Assumption~\ref{asspt:average_strictness} below. In the scalar case $p=1$, there is no partialling out ($r_{j1}=X_j-\hat\mu_X$), the nuisance slope term in $e_{j1}$ vanishes, and~\eqref{eq:Ak_feas} reduces to $q_b(X_j,\cdot)\in\mathcal Q$, which is simply the assumed monotonicity of the target.
 \end{remark}
 
 
@@ -383,7 +391,7 @@ When the linear model~\eqref{eq:linear_model} holds, set $b_0(u)=\beta_0(u)+(\mu
 When the linear model is misspecified, all bounds remain valid relative to any $b$ producing valid quantile functions at observed covariate values. Under Assumption~\ref{asspt:average_strictness}, the pseudo-true parameter $\beta^{\mathrm{unc}}$ produces strictly increasing quantile functions $\psi_x(\cdot)$ for all $x\in\mathcal X$ with slope at least $\kappa>0$. Since $\hat\mu_X\toP\mu_X$, for $n$ large enough $b=\beta^{\mathrm{unc}}$  satisfies $q_b(X_j,\cdot)\in\mathcal Q$ for all $j$ with probability approaching one, so both the joint bound~\eqref{eq:pw_improvement} and the coefficientwise bound~\eqref{eq:coord_bound_general} hold relative to $\beta^{\mathrm{unc}}$ asymptotically.
 \end{remark}
 
-
+\kw{in line with what i wrote above, i think this woumd make a nice final paragraph to the section.}
 \begin{remark}[Hierarchy of improvement results]\label{rem:hierarchy}
 Theorem~\ref{thm:pw_ols_improvement} and Proposition~\ref{prop:coord_improvement} are two endpoints of a spectrum, with Theorem \ref{thm:pw_ols_improvement} requiring no additional assumptions but only guaranteeing improvement for all coefficients jointly, while Proposition \ref{prop:coord_improvement} isolates improvements for each coefficient separately but requires additional assumptions on the nature of the non-monotonicity. A natural intermediate is to isolate a subset $S$ of coefficients for which one expects Corollary \ref{cor:coord_sufficient} to hold. In that case, an analogous improvement result holds for that subset of coefficients, with the nuisance error collecting only estimation errors from the intercept and the $(-S)$-slopes.
 
@@ -449,7 +457,7 @@ Under the same assumptions as Theorem~\ref{thm:convergence_beta},
 \[
 \sqrt{n}\big(\hat{\beta}^{\est}(\cdot) - \beta^{\est}(\cdot)\big) \leadsto \mathbb{G}_\beta(\cdot) \quad \text{in } \ell^\infty([a,b])^{p+1},
 \]
-the same Gaussian process as the unconstrained estimator. Under Average Strictness, $\beta^{\est} = \beta^{\text{unc}}$ (Section~\ref{sec:population_fivr_problem_identification}), so the centering coincides with Theorem~\ref{thm:convergence_beta}. The proof decomposes $\hat{\beta}^{\est} = \tilde{\beta} + \Delta_n$ and shows $\sqrt{n}\|\Delta_n\|_\infty = o_P(1)$ using the Hadamard differentiability of $\Pi_{\mathcal{Q}}$; see Appendix~\ref{app:pw_ols_proof}.
+the same Gaussian process as the unconstrained estimator. 
 \end{theorem}
 
 The \est estimator has the same asymptotic variance as unconstrained 2SLS, while Theorem~\ref{thm:pw_ols_improvement} guarantees smaller finite-sample risk. Standard 2SLS inference remains valid.
@@ -471,110 +479,44 @@ where $\hat{\bar{S}}_{\mathrm{2SLS}}$ is the sample analogue and $\hat{\xi}_j(u_
 \section{Monte Carlo simulations}
 \label{sec:simulation}
 
-We compare unconstrained 2SLS with \est across 500 Monte Carlo replications.
+We compare unconstrained 2SLS with \est using the data-generating process of \citet{chetverikov2016iv} and \citet{melly2025minimum}.
 
 \subsection{Data generating process}
 
-We generate data from a grouped data design with $n$ groups and $N$ observations per group. The group-level treatment $X_j$ is endogenous:
+We adopt the endogenous grouped-data DGP from \citet[][Section~4.2]{melly2025minimum}, which matches the design in \citet{chetverikov2016iv}. For groups $j = 1, \ldots, n$ with $N$ individuals each, individual outcomes follow the Skorohod representation
+\begin{equation}\label{eq:dgp_sim}
+y_{ij} = x_{1ij}\, \beta_1(u_{ij}) + x_{2j}\, \gamma(u_{ij}) + \alpha_j(u_{ij}),
+\end{equation}
+where $u_{ij} \sim U(0,1)$, $x_{1ij} \sim \exp(0.25\, \mathcal{N}(0,1))$ is an individual-level covariate, $\beta_1(u) = u/2$, and $\gamma(u) = \sqrt{u} + \beta_{\text{slope}} \cdot \Phi^{-1}(u)$ is the group-level treatment effect of interest. The group heterogeneity is $\alpha_j(u) = u\, \eta_j - u/2$ with $\eta_j \sim U(0,1)$, which has mean zero. The group-level treatment is endogenous:
 \[
-X_j = \pi_Z Z_j + 0.7\, v_j + \varepsilon_j, \quad Z_j \sim N(0,1), \quad v_j \sim N(0,1), \quad \varepsilon_j \sim N(0,1),
+x_{2j} = \pi_Z\, z_j + \eta_j + \sqrt{1 - \pi_Z^2}\, \nu_j,
 \]
-where $\pi_Z$ controls IV strength. The structural quantile function is
-\[
-q(x, u) = \beta_0(u) + \beta_1(u)(x - \mu_X), \quad \beta_0(u) = \Phi^{-1}(u), \quad \beta_1(u) = 1 + \beta_{\text{slope}} \cdot \Phi^{-1}(u),
-\]
-with $\beta_{\text{slope}} > 0$ controlling the degree of treatment effect heterogeneity across quantiles. Individual outcomes within group $j$ are drawn from the distribution implied by $q(X_j, \cdot)$, contaminated by the confounding term $v_j$. Quantile functions are evaluated on a grid of 17 points from $u = 0.10$ to $u = 0.90$.
+where $z_j, \nu_j \sim \exp(0.25\, \mathcal{N}(0,1))$ and $\pi_Z \in (0,1]$ controls instrument strength. The endogeneity arises because $\eta_j$ enters both the treatment equation and the outcome heterogeneity. When $\beta_{\text{slope}} = 0$, this reduces to the original specification in \citet{melly2025minimum}.
 
-The baseline specification uses $n = 30$ groups, $N = 25$ observations per group, $\pi_Z = 0.25$, and $\beta_{\text{slope}} = 0.3$. We vary one parameter at a time to study each factor's effect.
+Our estimator works directly with group-level sample quantile functions $\widehat{Q}_{Y_j}(u)$, ignoring individual covariates $x_{1ij}$. This is by design: \est targets the total group-level effect $\gamma(u)$, not the conditional effect that would be obtained by first partialling out $x_{1ij}$. The baseline specification uses $n = 50$ groups, $N = 50$ observations per group, and 500 Monte Carlo replications. We evaluate quantile functions on a grid of 19 points from $u = 0.05$ to $u = 0.95$.
 
 \subsection{Results}
 
-\paragraph{IV strength.} Table~\ref{tab:iv_strength} reports MSE and percentage improvements as a function of IV strength ($\pi_Z$). The projection delivers its largest gains when instruments are weak: at $\pi_Z = 0.10$, \est reduces MSE by 22.5\% relative to unconstrained 2SLS. The gain falls to about 5\% at moderate IV strength ($\pi_Z = 0.20$--$0.30$) and becomes negligible ($< 1\%$) with strong instruments ($\pi_Z = 0.50$). This pattern is expected---weak instruments inflate the variance of $\tilde{\beta}_1(u)$, leading to more frequent monotonicity violations that the projection corrects.
+Table~\ref{tab:simulations} reports integrated mean squared error (IMSE) for three simulation designs.
 
-\begin{table}[h]
+\input{tabs/tab_simulations}
+
+\paragraph{Instrument strength (Panel~A).} The projection delivers its largest gains when instruments are weak: at $\pi_Z = 0.3$, \est reduces IMSE by 37.9\% relative to unconstrained 2SLS. The gain remains substantial (15--18\%) at very weak instruments ($\pi_Z = 0.1$--$0.2$), where the absolute IMSE is large, and becomes negligible with strong instruments ($\pi_Z = 1.0$). This pattern is expected---weak instruments inflate the variance of $\tilde{\beta}_1(u)$, leading to more frequent monotonicity violations that the projection corrects. Figure~\ref{fig:iv_strength} illustrates the relationship between instrument strength and the IMSE reduction from projection.
+
+\begin{figure}[htbp]
 \centering
-\begin{tabular}{cccc}
-\hline
-$\pi_Z$ & MSE (2SLS) & MSE (\est) & \% Gain \\
-\hline
-0.10 & 162.2 & 125.8 & 22.3 \\
-0.15 & 233.0 & 213.1 & 8.4 \\
-0.20 & 6.0 & 5.7 & 5.0 \\
-0.25 & 4.0 & 3.9 & 3.7 \\
-0.30 & 1.5 & 1.5 & 4.8 \\
-0.50 & 0.04 & 0.04 & 0.4 \\
-\hline
-\end{tabular}
-\caption{Effect of IV strength ($n = 30$, $N = 25$, $\beta_{\text{slope}} = 0.3$). MSE is $\int \|\hat{\beta}(u) - \beta(u)\|^2\, du$ averaged over replications. ``\% Gain'' is the MSE reduction relative to unconstrained 2SLS.}
-\label{tab:iv_strength}
-\end{table}
+\includegraphics[width=0.75\textwidth]{figs/fig_iv_strength}
+\caption{Percentage IMSE reduction of \est relative to unconstrained 2SLS as a function of instrument strength $\pi_Z$ ($n = 50$, $N = 50$, 500 replications).}
+\label{fig:iv_strength}
+\end{figure}
 
-\paragraph{Sample size.} Table~\ref{tab:sample_size} reports results for selected $(n, N)$ combinations. The gains from projection are largest when the number of groups $n$ is small (10.2\% at $n = 25$, $N = 10$) and diminish as $n$ grows (1.1\% at $n = 100$, $N = 25$). The within-group sample size $N$ affects the precision of the estimated group quantile functions but has a less systematic effect on the projection gains.
+\paragraph{Sample size (Panel~B).} The gains from projection are largest when the number of groups $n$ is small: 23.7\% at $(n, N) = (25, 25)$ and 17.7\% at $(n, N) = (25, 200)$. With $n \geq 100$ groups, the unconstrained estimator is already precise enough that monotonicity violations are rare, and the projection provides negligible improvement. The within-group sample size $N$ has a smaller effect: increasing $N$ improves the precision of group quantile estimates but does not systematically change the projection gains.
 
-\begin{table}[h]
-\centering
-\begin{tabular}{ccccc}
-\hline
-$n$ & $N$ & MSE (2SLS) & MSE (\est) & \% Gain \\
-\hline
-15 & 10 & 67.7 & 64.5 & 4.7 \\
-25 & 10 & 26.3 & 23.8 & 9.6 \\
-25 & 25 & 73.2 & 68.4 & 6.5 \\
-50 & 25 & 2.0 & 1.99 & 2.1 \\
-100 & 25 & 0.08 & 0.084 & 0.4 \\
-100 & 100 & 0.06 & 0.058 & 0.03 \\
-\hline
-\end{tabular}
-\caption{Effect of sample size ($\pi_Z = 0.25$, $\beta_{\text{slope}} = 0.3$). Format as in Table~\ref{tab:iv_strength}.}
-\label{tab:sample_size}
-\end{table}
-
-\paragraph{Treatment effect heterogeneity.} Table~\ref{tab:heterogeneity} varies $\beta_{\text{slope}}$, which controls how much the treatment effect varies across quantiles. With homogeneous effects ($\beta_{\text{slope}} = 0$), the projection still provides a small gain (2.6\%) because the intercept function $\beta_0(u) = \Phi^{-1}(u)$ can have its monotonicity disrupted by estimation noise. The gain rises with heterogeneity, reaching 14.8\% at $\beta_{\text{slope}} = 0.2$, before declining somewhat at higher levels. The non-monotonicity in gains as a function of $\beta_{\text{slope}}$ reflects the interaction between the DGP's inherent monotonicity margin and the variance of the estimator.
-
-\begin{table}[h]
-\centering
-\begin{tabular}{cccc}
-\hline
-$\beta_{\text{slope}}$ & MSE (2SLS) & MSE (\est) & \% Gain \\
-\hline
-0.0 & 2493 & 2427 & 2.7 \\
-0.1 & 9772 & 8963 & 8.3 \\
-0.2 & 54.9 & 47.0 & 14.3 \\
-0.3 & 69.4 & 64.1 & 7.6 \\
-0.4 & 30.2 & 29.4 & 2.6 \\
-0.5 & 33.4 & 31.7 & 5.0 \\
-\hline
-\end{tabular}
-\caption{Effect of treatment effect heterogeneity ($n = 30$, $N = 25$, $\pi_Z = 0.2$). Format as in Table~\ref{tab:iv_strength}.}
-\label{tab:heterogeneity}
-\end{table}
-
-\paragraph{Multivariate regressors.} Table~\ref{tab:multivariate} reports results for $p \in \{1, 2, 3\}$ regressors with moderate and high heterogeneity.
-
-\begin{table}[h]
-\centering
-\begin{tabular}{ccccc}
-\hline
-$p$ & $\beta_{\text{slope}}$ & MSE (2SLS) & MSE (\est) & \% Gain \\
-\hline
-1 & 0.3 & 1890 & 1840 & 2.6 \\
-2 & 0.3 & 1029 & 975 & 5.2 \\
-3 & 0.3 & 2.3 & 2.14 & 7.8 \\
-1 & 0.5 & 41.6 & 40.1 & 3.7 \\
-2 & 0.5 & 220 & 216 & 2.0 \\
-3 & 0.5 & 7.2 & 6.74 & 6.8 \\
-\hline
-\end{tabular}
-\caption{Multivariate regressors ($\pi_Z = 0.2$, $n = 30$--$40$, $N = 15$).}
-\label{tab:multivariate}
-\end{table}
-
-
-\paragraph{Extreme scenarios.} Under a combination of weak IV ($\pi_Z = 0.1$), small sample ($n = 20$), and high heterogeneity ($\beta_{\text{slope}} = 0.4$), the \est estimator reduces MSE by 49.8\%. This is a setting where the unconstrained 2SLS estimates are highly volatile and frequently violate monotonicity. The projection corrects these violations and brings estimates closer to the constrained target.
+\paragraph{Treatment effect heterogeneity (Panel~C).} As $\beta_{\text{slope}}$ increases, the treatment effect $\gamma(u)$ varies more across quantiles, which amplifies the variance of the unconstrained estimator and produces more severe monotonicity violations. The IMSE gain of \est rises monotonically from 37.9\% at $\beta_{\text{slope}} = 0$ (the original \citealt{melly2025minimum} specification) to 55.9\% at $\beta_{\text{slope}} = 0.3$. Even without additional heterogeneity, the projection yields substantial gains in this moderate-IV setting.
 
 \subsection{Summary}
 
-The simulations confirm the theoretical predictions. The projection step in \est reduces finite-sample MSE, with the largest gains under weak instruments and small samples. The improvement is monotonically decreasing in IV strength and sample size. In all cases, the projection does not introduce bias: the bias of \est equals that of unconstrained 2SLS across all designs, confirming that the projection only reduces variance.
+The simulations confirm the theoretical predictions of Theorem~\ref{thm:pw_ols_improvement}. The projection step in \est reduces finite-sample IMSE across all designs, with gains concentrated in settings where weak instruments or small samples cause frequent monotonicity violations in the unconstrained estimator.
 
 
 \section{Empirical illustration}
@@ -1311,19 +1253,158 @@ The class $\{(y,z) \mapsto \mathbf{z}\, Q_y(u) : u \in [a,b]\}$ is $P$--Donsker 
 
 \begin{proof}[Proof of Theorem~\ref{thm:pw_ols_clt}]
 
-By the algebraic structure of the IV weights, $\hat{\psi}_x(u) = \tilde{\beta}_0(u) + \tilde{\beta}_1(u)^{\T}(x - \hat{\mu}_X)$ is linear in $x$, so the unconstrained coefficients $\tilde{\beta}(u)$ are the standard 2SLS estimator applied quantile by quantile. Define the projection correction $D_x(u) := \Pi_{\mathcal{Q}}(\hat{\psi}_x)(u) - \hat{\psi}_x(u)$. Then the \est estimator decomposes as
-\[
-\hat{\beta}_1^{\est}(u) = \tilde{\beta}_1(u) + \Delta_{1,n}(u), \quad \Delta_{1,n}(u) := \hat{\Sigma}_{XX}^{-1} \frac{1}{n}\sum_{j=1}^n (X_j - \hat{\mu}_X) D_{X_j}(u),
-\]
-and $\hat{\beta}_0^{\est}(u) = \tilde{\beta}_0(u) + \Delta_{0,n}(u)$ with $\Delta_{0,n}(u) := \frac{1}{n}\sum_{j=1}^n D_{X_j}(u)$.
+By Theorem~\ref{thm:convergence_beta}, $\sqrt{n}(\tilde\beta(\cdot)-\beta^{\mathrm{unc}}(\cdot))\Rightarrow\mathbb{G}_\beta(\cdot)$ in $\ell^\infty([a,b])^{p+1}$. Since $\beta^{\est}=\beta^{\mathrm{unc}}$ under Assumption~\ref{asspt:average_strictness}, Slutsky's lemma reduces the proof to showing
+\begin{equation}\label{eq:main_goal_pf}
+\sqrt{n}\,\|\Delta_n\|_\infty = o_P(1),
+\qquad\text{where}\quad
+\Delta_n := \hat\beta^{\est}-\tilde\beta.
+\end{equation}
 
-We show $\sqrt{n}\|\Delta_n\|_\infty = o_P(1)$. Under Assumption~\ref{asspt:average_strictness}, $\psi_x(\cdot)$ is strictly increasing for each $x \in [\xbar, \xbaru]$ with slope at least $\kappa > 0$. By Lemma~\ref{lem:iso-hadamard}, $\Pi_{\mathcal{Q}}$ is Hadamard differentiable at $\psi_x$ tangentially to $C([a,b])$ with derivative equal to the identity, so the Hadamard remainder satisfies
+test
+ 
+\paragraph{Step 0: Decomposition.}
+The mean-centered design matrix $\hat{\mathbf{X}}$ (with rows $(1,\,(X_j-\hat\mu_X)^{\!\T})$) satisfies $\frac{1}{n}\hat{\mathbf{X}}^{\!\T}\hat{\mathbf{X}}=\mathrm{diag}(1,\hat\Sigma_{XX})$, giving
+\begin{align}
+\Delta_{0,n}(u) &= \frac{1}{n}\sum_{j=1}^n D_{X_j}(u), \label{eq:Delta0_pf}\\[3pt]
+\Delta_{1,n}(u) &= \hat\Sigma_{XX}^{-1}\,\frac{1}{n}\sum_{j=1}^n (X_j-\hat\mu_X)\,D_{X_j}(u), \label{eq:Delta1_pf}
+\end{align}
+where $D_x(u):=\PiQ(\hat\psi_x)(u)-\hat\psi_x(u)$ is the projection correction. Since $\hat\Sigma_{XX}^{-1}\toP\Sigma_{XX}^{-1}$ with $\Sigma_{XX}\succ 0$ (Assumption~\ref{ass:full_rank}), it suffices to show, for each component $k\in\{0,1,\dots,p\}$:
+\begin{equation}\label{eq:Wk_pf}
+\sqrt{n}\,\sup_{u\in[a,b]}\Bigl|\frac{1}{n}\sum_{j=1}^n c_j\,D_{X_j}(u)\Bigr|=o_P(1),
+\end{equation}
+where $c_j=1$ for $k=0$ and $c_j=(X_j-\hat\mu_X)_k$ for $k\ge 1$. We prove the harder case $k\ge 1$; the intercept case follows identically with $c_j\equiv 1$.
+ 
+\paragraph{Step 1: Estimation error and crude bound.}
+The estimation error $e_x(u):=\hat\psi_x(u)-\psi_x(u)$ is affine in $x$:
 \[
-\|D_x\|_\infty = o(\|\hat{\psi}_x - \psi_x\|_\infty) = o_P(n^{-1/2}) \cdot (1 + \|x - \mu_X\|).
+e_x(u)=e_0(u)+e_1(u)^{\!\T}(x-\mu_X),
 \]
-The $o_P(n^{-1/2})$ rate holds uniformly over $x \in [\xbar, \xbaru]$: since $x \mapsto \psi_x$ is continuous and $[\xbar, \xbaru]$ is compact, the strict increase constant $\kappa$ is uniform, and the Hadamard remainder rate is controlled by $\kappa$ and the modulus of continuity of $\psi_x'$, both bounded on the compact support.
-
-Combining: $\sqrt{n}\|\Delta_{1,n}\|_\infty \leq \|\hat{\Sigma}_{XX}^{-1}\| \cdot \frac{1}{n}\sum_j \|X_j - \hat{\mu}_X\| \cdot \sqrt{n}\|D_{X_j}\|_\infty = O_P(1) \cdot O_P(1) \cdot o_P(1) = o_P(1)$ by Assumption~\ref{asspt:finite_moments}. The argument for $\Delta_{0,n}$ is analogous. By Slutsky's lemma, $\sqrt{n}(\hat{\beta}^{\est} - \beta^{\text{unc}}) = \sqrt{n}(\tilde{\beta} - \beta^{\text{unc}}) + o_P(1) \leadsto \mathbb{G}_\beta$.
+where
+\begin{align*}
+e_0(u)&:=\bigl(\tilde\beta_0(u)-\beta_0^{\mathrm{unc}}(u)\bigr)
+  +\bigl(\tilde\beta_1(u)-\beta_1^{\mathrm{unc}}(u)\bigr)^{\!\T}(\mu_X-\hat\mu_X)
+  -\beta_1^{\mathrm{unc}}(u)^{\!\T}(\hat\mu_X-\mu_X),\\
+e_1(u)&:=\tilde\beta_1(u)-\beta_1^{\mathrm{unc}}(u).
+\end{align*}
+Define
+\[
+\alpha_n:=\max\bigl(\|e_0\|_\infty,\;\|e_1\|_\infty\bigr)=O_P(n^{-1/2})
+\]
+by Theorem~\ref{thm:convergence_beta} and the law of large numbers. Then
+\begin{equation}\label{eq:e_bound_pf}
+\|e_x\|_\infty\le\alpha_n(1+\|x-\mu_X\|)\qquad\text{for all }x\in\R^p.
+\end{equation}
+Under Assumption~\ref{asspt:average_strictness}, $\PiQ(\psi_x)=\psi_x$, so by the $\|\cdot\|_\infty$-contraction property of $\PiQ$ (Lemma~\ref{lem:projection_properties}(iii)):
+\begin{equation}\label{eq:crude_D_pf}
+\|D_x\|_\infty
+\le\|\PiQ(\hat\psi_x)-\PiQ(\psi_x)\|_\infty+\|\hat\psi_x-\psi_x\|_\infty
+\le 2\|e_x\|_\infty
+\le 2\alpha_n(1+\|x-\mu_X\|).
+\end{equation}
+Equivalently, defining the rescaled correction $R_x:=\sqrt{n}\,D_x$:
+\begin{equation}\label{eq:crude_R_pf}
+\|R_x\|_\infty\le 2\sqrt{n}\,\alpha_n(1+\|x-\mu_X\|)=O_P(1+\|x-\mu_X\|).
+\end{equation}
+ 
+\paragraph{Step 2: Smooth approximation of the empirical process.}
+By Theorem~\ref{thm:convergence_beta} and Corollary~\ref{cor:cont-version}, the rescaled processes $\sqrt{n}\,e_k$ converge weakly in $\ell^\infty([a,b])$ to Gaussian limits with a.s.\ continuous sample paths, for each $k\in\{0,1,\dots,p\}$. By asymptotic tightness and the Arzel\`a--Ascoli characterization of relative compactness in $C([a,b])$, for every $\varepsilon>0$ there exist a deterministic Lipschitz constant $\Lambda_\varepsilon<\infty$ and a deterministic threshold $N_\varepsilon$ such that for all $n\ge N_\varepsilon$ one can find (random) functions $\ell_0^{(n)},\ell_{1,1}^{(n)},\dots,\ell_{1,p}^{(n)}\in C^1([a,b])$ with $\mathrm{Lip}(\ell_k^{(n)})\le\Lambda_\varepsilon$ and
+\begin{equation}\label{eq:smooth_event_pf}
+P\!\Bigl(\max_{k}\|\sqrt{n}\,e_k-\ell_k^{(n)}\|_\infty>\varepsilon\Bigr)<\varepsilon.
+\end{equation}
+Indeed, weak convergence to a tight limit in $C([a,b])$ implies asymptotic tightness: for every $\eta>0$, there exists a compact $K_\eta\subset C([a,b])$ with $\liminf_n P(\sqrt{n}\,e_k\in K_\eta)\ge 1-\eta$ for each $k$. By Arzel\`a--Ascoli, $K_\eta$ is uniformly bounded and equicontinuous. Cover $K_\eta$ by finitely many $(\varepsilon/3)$-balls in $\|\cdot\|_\infty$, center each ball on a $C^1$ function with Lipschitz constant $\le\Lambda$ (by Weierstrass approximation, at the cost of enlarging each ball to radius $\varepsilon/2$). Take $\ell_k^{(n)}$ as the $C^1$ center nearest to $\sqrt{n}\,e_k$ whenever $\sqrt{n}\,e_k\in K_\eta$; otherwise, set $\ell_k^{(n)}\equiv 0$. Choosing $\eta=\varepsilon/(p+1)$ yields~\eqref{eq:smooth_event_pf}.
+ 
+Denote the good event in~\eqref{eq:smooth_event_pf} by $\mathcal{E}_n^\varepsilon$. For any $x\in\R^p$, define the smooth proxy
+\[
+\ell_x:=\ell_0^{(n)}+\sum_{k=1}^p\ell_{1,k}^{(n)}\,(x-\mu_X)_k\;\in C^1([a,b]),
+\]
+with $\mathrm{Lip}(\ell_x)\le\Lambda_\varepsilon(1+\|x-\mu_X\|)$. Writing $H_n^x:=\sqrt{n}\,e_x=\sqrt{n}\,e_0+\sqrt{n}\,e_1^{\!\T}(x-\mu_X)$, on $\mathcal{E}_n^\varepsilon$:
+\begin{equation}\label{eq:Hx_ell_pf}
+\|H_n^x-\ell_x\|_\infty
+\le\|\sqrt{n}\,e_0-\ell_0^{(n)}\|_\infty+\|x-\mu_X\|\max_k\|\sqrt{n}\,e_{1,k}-\ell_{1,k}^{(n)}\|_\infty
+\le\varepsilon(1+\|x-\mu_X\|).
+\end{equation}
+ 
+\paragraph{Step 3: Uniform Hadamard remainder.}
+We derive a bound on $|R_x(u)|=\sqrt{n}\,|D_x(u)|$ valid uniformly over all $x$ with $\|x-\mu_X\|$ not too large, using the following quantitative consequence of the proof of Lemma~\ref{lem:iso-hadamard}.
+ 
+\begin{lemma}[Quantitative Hadamard bound]\label{lem:quant_hadamard_pf}
+Let $f\in\ell^\infty([a,b])$ be absolutely continuous with $f'(u)\ge\kappa>0$ a.e. For any $g\in\ell^\infty([a,b])$ and $\ell\in C^1([a,b])$ with $\mathrm{Lip}(\ell)=\Lambda$ satisfying $\Lambda\le\kappa\sqrt{n}/2$,
+\[
+\sqrt{n}\,\|\PiQ(f+n^{-1/2}g)-(f+n^{-1/2}g)\|_\infty\le 2\|g-\ell\|_\infty.
+\]
+\end{lemma}
+ 
+\begin{proof}
+Since $f'(u)\ge\kappa$ a.e.\ and $n^{-1/2}\Lambda\le\kappa/2$, the function $f+n^{-1/2}\ell$ has derivative $\ge\kappa-n^{-1/2}\Lambda\ge\kappa/2>0$ a.e., hence $f+n^{-1/2}\ell\in\mathcal{Q}$ and $\PiQ(f+n^{-1/2}\ell)=f+n^{-1/2}\ell$. By $\|\cdot\|_\infty$-contraction (Lemma~\ref{lem:projection_properties}(iii)):
+\[
+\|\PiQ(f+n^{-1/2}g)-(f+n^{-1/2}\ell)\|_\infty
+\le\|(f+n^{-1/2}g)-(f+n^{-1/2}\ell)\|_\infty
+=n^{-1/2}\|g-\ell\|_\infty.
+\]
+By the triangle inequality:
+\begin{align*}
+\|\PiQ(f+n^{-1/2}g)-(f+n^{-1/2}g)\|_\infty
+&\le\|\PiQ(f+n^{-1/2}g)-(f+n^{-1/2}\ell)\|_\infty+n^{-1/2}\|g-\ell\|_\infty\\
+&\le 2n^{-1/2}\|g-\ell\|_\infty.
+\end{align*}
+Multiplying by $\sqrt{n}$ gives the result.
+\end{proof}
+ 
+We apply Lemma~\ref{lem:quant_hadamard_pf} with $f=\psi_x$ (which satisfies $\psi_x'(u)\ge\kappa$ for a.e.\ $u\in[a,b]$, uniformly in $x\in\mathcal{X}$, by Assumption~\ref{asspt:average_strictness}), $g=H_n^x$, and $\ell=\ell_x$. The Lipschitz condition $\Lambda_\varepsilon(1+\|x-\mu_X\|)\le\kappa\sqrt{n}/2$ is equivalent to
+\begin{equation}\label{eq:Lip_threshold_pf}
+\|x-\mu_X\|\le M_n^*:=\frac{\kappa\sqrt{n}}{2\Lambda_\varepsilon}-1.
+\end{equation}
+Since $\Lambda_\varepsilon$ is fixed for each $\varepsilon>0$, we have $M_n^*\to\infty$. On $\mathcal{E}_n^\varepsilon$ and for all $x$ satisfying~\eqref{eq:Lip_threshold_pf}, combining Lemma~\ref{lem:quant_hadamard_pf} with~\eqref{eq:Hx_ell_pf}:
+\begin{equation}\label{eq:R_uniform_pf}
+\|R_x\|_\infty\le 2\|H_n^x-\ell_x\|_\infty\le 2\varepsilon(1+\|x-\mu_X\|).
+\end{equation}
+Crucially, this bound holds \textit{simultaneously for all such $x$}, not just for a single $x$, because $\ell_x$ is constructed from the same $(p+1)$ component functions $\ell_0^{(n)},\ell_{1,1}^{(n)},\dots,\ell_{1,p}^{(n)}$. No discretization or union bound over net points is needed.
+ 
+\paragraph{Step 4: Bounding the weighted sum.}
+We split
+\[
+\frac{1}{n}\sum_{j=1}^n|c_j|\,|R_{X_j}(u)|
+=\underbrace{\frac{1}{n}\sum_{j\in J_n^{\le}}|c_j|\,|R_{X_j}(u)|}_{=:\,T_1(u)}
++\underbrace{\frac{1}{n}\sum_{j\in J_n^{>}}|c_j|\,|R_{X_j}(u)|}_{=:\,T_2(u)},
+\]
+where $J_n^{\le}:=\{j:\|X_j-\mu_X\|\le M_n^*\}$ and $J_n^{>}:=\{j:\|X_j-\mu_X\|> M_n^*\}$.
+ 
+\smallskip\noindent\textit{Bounded part $(T_1)$.} On $\mathcal{E}_n^\varepsilon$, by~\eqref{eq:R_uniform_pf}:
+\begin{align}
+\sup_u T_1(u)
+&\le 2\varepsilon\,\frac{1}{n}\sum_{j=1}^n|c_j|\,(1+\|X_j-\mu_X\|) \notag\\
+&\le 2\varepsilon\,\frac{1}{n}\sum_{j=1}^n\bigl(\|X_j-\mu_X\|+|\hat\mu_X-\mu_X|\bigr)(1+\|X_j-\mu_X\|) \notag\\
+&= 2\varepsilon\cdot C_n, \label{eq:T1_pf}
+\end{align}
+where $C_n:=\frac{1}{n}\sum_{j=1}^n(\|X_j-\mu_X\|+o_P(1))(1+\|X_j-\mu_X\|)=O_P(1)$ by the law of large numbers, since $\E[\|X-\mu_X\|(1+\|X-\mu_X\|)]<\infty$ follows from $\E[\|X\|^4]<\infty$ (Assumption~\ref{asspt:finite_moments}).
+ 
+\smallskip\noindent\textit{Tail $(T_2)$.} By~\eqref{eq:crude_R_pf}:
+\begin{equation}\label{eq:T2_pf}
+\sup_u T_2(u)
+\le O_P(1)\,\frac{1}{n}\sum_{j=1}^n(1+\|X_j-\mu_X\|)^2\,\mathbf{1}(\|X_j-\mu_X\|>M_n^*).
+\end{equation}
+Since $M_n^*\to\infty$ and $\E[(1+\|X-\mu_X\|)^4]<\infty$ (Assumption~\ref{asspt:finite_moments}), dominated convergence gives $\E[(1+\|X-\mu_X\|)^2\mathbf{1}(\|X-\mu_X\|>M_n^*)]\to 0$, and the variance of the sample average is $O(1/n)$, so
+\begin{equation}\label{eq:tail_vanish_pf}
+\frac{1}{n}\sum_{j=1}^n(1+\|X_j-\mu_X\|)^2\,\mathbf{1}(\|X_j-\mu_X\|>M_n^*)\;\toP\;0.
+\end{equation}
+ 
+\paragraph{Step 5: Conclusion.}
+Combining~\eqref{eq:T1_pf}--\eqref{eq:tail_vanish_pf}: on $\mathcal{E}_n^\varepsilon$ (which has probability $\ge 1-\varepsilon$ for $n\ge N_\varepsilon$) and for all $n$ large enough that the tail contribution in~\eqref{eq:T2_pf} is less than $\varepsilon$,
+\[
+\sqrt{n}\,\sup_{u\in[a,b]}\Bigl|\frac{1}{n}\sum_{j=1}^n c_j\,D_{X_j}(u)\Bigr|
+\le \sup_u T_1(u)+\sup_u T_2(u)
+\le 2\varepsilon\, C_n + o_P(1).
+\]
+That is, for every $\varepsilon>0$ and $\delta>0$,
+\[
+\limsup_{n\to\infty}P\!\Bigl(\sqrt{n}\sup_{u\in[a,b]}\Bigl|\frac{1}{n}\sum_{j=1}^n c_j D_{X_j}(u)\Bigr|>2\varepsilon C+\delta\Bigr)\le\varepsilon,
+\]
+where $C:=\E[\|X-\mu_X\|(1+\|X-\mu_X\|)]+1<\infty$ is a deterministic upper bound satisfying $P(C_n>C)<\varepsilon$ for all large $n$ (by the law of large numbers). Since $\varepsilon>0$ is arbitrary, we obtain~\eqref{eq:Wk_pf}. The identical argument with $c_j\equiv 1$ gives $\sqrt{n}\|\Delta_{0,n}\|_\infty=o_P(1)$.
+ 
+By Slutsky's lemma applied to $\sqrt{n}(\hat\beta^{\est}-\beta^{\mathrm{unc}})=\sqrt{n}(\tilde\beta-\beta^{\mathrm{unc}})+\sqrt{n}\Delta_n$ with $\sqrt{n}(\tilde\beta-\beta^{\mathrm{unc}})\Rightarrow\mathbb{G}_\beta$ (Theorem~\ref{thm:convergence_beta}) and $\sqrt{n}\|\Delta_n\|_\infty=o_P(1)$, we conclude
+\[
+\sqrt{n}\bigl(\hat\beta^{\est}(\cdot)-\beta^{\est}(\cdot)\bigr)\;\Rightarrow\;\mathbb{G}_\beta(\cdot)\qquad\text{in }\ell^\infty([a,b])^{p+1}.\qed
+\]
 \end{proof}
 
 
