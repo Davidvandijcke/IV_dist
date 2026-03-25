@@ -88,7 +88,7 @@ run_one_rep_coverage <- function(seed, dgp_args, q_grid,
   set.seed(seed)
 
   # Generate data
-  data <- do.call(dgp_mp, dgp_args)
+  data <- do.call(dgp_centered, dgp_args)
   Q_Yk <- compute_sample_quantiles(data$y_list, q_grid)
 
   true_gamma <- data$true_gamma  # Q-vector: true slope coefficient gamma(u)
@@ -182,15 +182,19 @@ run_coverage_experiment <- function(n_reps = 500L, alpha = 0.05, B = 500L,
 
   q_grid <- Q_GRID
 
-  # Parameter configurations to test
+  # Parameter configurations using dgp_centered
   param_grid <- data.frame(
-    M    = c(50,  50,  100, 200, 50),
-    N    = c(50,  50,  50,  50,  50),
-    pi_Z = c(0.3, 0.5, 0.5, 0.5, 0.7),
+    M         = c(50,  50,  50,  100, 50,  50),
+    N         = c(50,  50,  50,  50,  50,  50),
+    pi_Z      = c(0.3, 0.5, 0.5, 0.5, 0.7, 0.5),
+    p         = c(1,   1,   2,   1,   1,   2),
+    hetero_fs = c(0,   0,   0.5, 0,   0,   0.5),
+    label     = c("weak IV", "moderate IV", "p=2 hFS",
+                  "large M", "strong IV", "p=2 hFS strong"),
     stringsAsFactors = FALSE
   )
 
-  cat(sprintf("D-IV Coverage Simulation\n"))
+  cat(sprintf("D-IV Coverage Simulation (dgp_centered)\n"))
   cat(sprintf("  Reps: %d | Bootstrap: %d | Alpha: %.2f | Cores: %d\n",
               n_reps, B, alpha, n_cores))
 
@@ -200,11 +204,11 @@ run_coverage_experiment <- function(n_reps = 500L, alpha = 0.05, B = 500L,
     params <- param_grid[row_i, ]
     dgp_args <- list(
       M = params$M, N = params$N, q_grid = q_grid,
-      endogenous = TRUE, heterogeneity = TRUE,
-      pi_Z = params$pi_Z, beta_slope = 0
+      pi_Z = params$pi_Z, p = params$p, hetero_fs = params$hetero_fs
     )
 
-    param_str <- sprintf("M=%d, N=%d, pi_Z=%.1f", params$M, params$N, params$pi_Z)
+    param_str <- sprintf("%s (M=%d, pi_Z=%.1f, p=%d, delta=%.1f)",
+                         params$label, params$M, params$pi_Z, params$p, params$hetero_fs)
     cat(sprintf("\n  [%d] %s ... ", row_i, param_str))
     t0 <- proc.time()[3]
 
@@ -221,9 +225,12 @@ run_coverage_experiment <- function(n_reps = 500L, alpha = 0.05, B = 500L,
       sub <- rep_df[rep_df$estimator == est, ]
       valid <- !is.na(sub$pw_coverage_rate)
       data.frame(
+        label            = params$label,
         M                = params$M,
         N                = params$N,
         pi_Z             = params$pi_Z,
+        p                = params$p,
+        hetero_fs        = params$hetero_fs,
         estimator        = est,
         pw_coverage_mean = mean(sub$pw_coverage_rate[valid]),
         ub_coverage      = mean(sub$ub_covers[valid]),
