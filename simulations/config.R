@@ -6,8 +6,8 @@
 #
 #   1. iv_strength    - Varying instrument strength (the main result)
 #   2. sample_size    - Varying (M, N) at pi_Z=1 (MP-comparable)
-#   3. heavy_tails    - Heavy-tailed errors + small N (independent channel)
-#   4. heterogeneity  - Varying treatment effect heterogeneity
+#   3. heavy_tails    - Heavy-tailed base distribution + small N (independent channel)
+#   4. heterogeneity  - Varying beta_slope at moderate IV (amplification channel)
 #
 # =============================================================================
 
@@ -23,7 +23,6 @@ EXPERIMENTS <- list(
 
   # -----------------------------------------------------------------------
   # 1. IV strength: the key result.
-  #    Endogenous MP DGP, varying pi_Z.
   # -----------------------------------------------------------------------
   iv_strength = list(
     dgps = "dgp_mp",
@@ -41,7 +40,7 @@ EXPERIMENTS <- list(
   ),
 
   # -----------------------------------------------------------------------
-  # 2. Sample size: vary M and N at pi_Z=1 (direct comparison with MP/CLP).
+  # 2. Sample size at pi_Z=1 (direct comparison with MP/CLP).
   # -----------------------------------------------------------------------
   sample_size = list(
     dgps = "dgp_mp",
@@ -59,8 +58,10 @@ EXPERIMENTS <- list(
   ),
 
   # -----------------------------------------------------------------------
-  # 3. Heavy tails: independent channel via noisy group QF estimation.
-  #    Strong instrument (pi_Z=1) to isolate the effect.
+  # 3. Heavy-tailed base distribution: independent channel via noisy group
+  #    QF estimation. Strong instrument (pi_Z=1).
+  #    The heavy tails are built into beta0(u) (the base quantile function),
+  #    so the population target gamma(u) = sqrt(u) is unchanged.
   # -----------------------------------------------------------------------
   heavy_tails = list(
     dgps = "dgp_mp",
@@ -70,7 +71,7 @@ EXPERIMENTS <- list(
       endogenous    = TRUE,
       heterogeneity = TRUE,
       pi_Z          = 1.0,
-      error_df      = c(Inf, 3, 2),
+      base_dist     = c("normal", "t3", "t2", "lognormal"),
       stringsAsFactors = FALSE
     ),
     estimators = c("2sls", "div"),
@@ -79,18 +80,19 @@ EXPERIMENTS <- list(
   ),
 
   # -----------------------------------------------------------------------
-  # 4. Treatment effect heterogeneity: vary beta_slope at pi_Z=1.
-  #    gamma(u) = sqrt(u) + beta_slope * Phi^{-1}(u)
+  # 4. Treatment effect heterogeneity at moderate IV (pi_Z=0.5).
+  #    Shows that beta_slope amplifies weak-IV gains.
+  #    Also run at pi_Z=1 to confirm no effect with strong instruments.
   # -----------------------------------------------------------------------
   heterogeneity = list(
     dgps = "dgp_mp",
-    param_grid = data.frame(
+    param_grid = expand.grid(
       M             = 50,
       N             = 50,
       endogenous    = TRUE,
       heterogeneity = TRUE,
-      pi_Z          = 1.0,
-      beta_slope    = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.3),
+      pi_Z          = c(0.5, 1.0),
+      beta_slope    = c(0.0, 0.1, 0.2, 0.3),
       stringsAsFactors = FALSE
     ),
     estimators = c("2sls", "div"),

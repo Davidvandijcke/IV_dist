@@ -88,24 +88,26 @@ generate_table <- function() {
   })
 
   # --- Panel C: Heavy tails (selected rows) ---
-  pC <- pw(res_ht, N, error_df) %>%
-    mutate(error_label = ifelse(is.infinite(error_df), "None", sprintf("$t_{%g}$", error_df))) %>%
-    arrange(desc(error_df), N)  # None first, then t_3, then t_2
+  pC <- pw(res_ht, N, base_dist) %>%
+    mutate(dist_label = factor(base_dist,
+      levels = c("normal", "t3", "t2", "lognormal"),
+      labels = c("Normal", "$t_3$", "$t_2$", "Lognormal"))) %>%
+    arrange(dist_label, N)
 
-  # Select representative rows
   pC_sel <- pC %>% filter(
-    (is.infinite(error_df) & N == 10) |
-    (is.infinite(error_df) & N == 50) |
-    (error_df == 3 & N == 10)  |
-    (error_df == 3 & N == 25)  |
-    (error_df == 2 & N == 10)  |
-    (error_df == 2 & N == 25)
+    (base_dist == "normal"   & N == 10) |
+    (base_dist == "normal"   & N == 50) |
+    (base_dist == "t3"       & N == 10) |
+    (base_dist == "t2"       & N == 10) |
+    (base_dist == "t2"       & N == 25) |
+    (base_dist == "lognormal" & N == 10) |
+    (base_dist == "lognormal" & N == 25)
   )
 
   rows_C <- sapply(seq_len(nrow(pC_sel)), function(i) {
     r <- pC_sel[i, ]
     sprintf("%s, $N = %d$ & %s & %s & %.1f",
-            r$error_label, r$N, fmt(r$imse_2sls), fmt(r$imse_div), r$gain)
+            as.character(r$dist_label), r$N, fmt(r$imse_2sls), fmt(r$imse_div), r$gain)
   })
 
   # --- Assemble LaTeX ---
