@@ -518,9 +518,13 @@ Table~\ref{tab:simulations} reports coefficient IMSE ($\int \|\hat{\beta}_1(u) -
 
 \paragraph{\citealt{melly2025minimum} baseline (Panel~D).} With the original log-normal specification at $\pi_Z = 1$, gains are 5--7\% only at $n = 25$ (where the effective $F \approx 10$) and zero at $n \geq 50$. This DGP is unusually favorable for the unconstrained estimator: the all-positive, log-normal treatment variable creates a large monotonicity margin that absorbs estimation noise.
 
+\subsection{Inference}
+
+Theorem~\ref{thm:pw_ols_clt} establishes that \est and unconstrained 2SLS share the same asymptotic Gaussian process under Average Strictness, so standard 2SLS inference (sandwich standard errors, multiplier bootstrap for uniform bands) applies to \est without modification. The coverage simulations confirm this: across all DGP configurations, pointwise coverage is 94--99\% and uniform coverage is 90--99\% at the nominal 95\% level, for both the unconstrained and projected estimators. Band widths are identical for 2SLS and \est (same standard errors), so the IMSE improvement from projection comes at no cost to inference validity. The projection improves the point estimate while preserving the asymptotic distribution---confidence bands are centered more accurately without becoming wider.
+
 \subsection{Summary}
 
-The simulations confirm the theoretical predictions. The $W_2^2$ improvement guaranteed by Lemma~\ref{lemma:improvement} is strictly positive in every realization across all configurations tested. The projection provides the largest gains in settings with moderate instrument strength ($F \approx 4$--$12$), multiple regressors, heterogeneous first-stage relationships, and heavy-tailed within-group distributions. These features are common in applied IV research.
+The simulations confirm the theoretical predictions. The $W_2^2$ improvement guaranteed by Lemma~\ref{lemma:improvement} is strictly positive in every realization across all configurations tested. The projection provides the largest gains in settings with moderate instrument strength ($F \approx 4$--$12$), multiple regressors, heterogeneous first-stage relationships, and heavy-tailed within-group distributions---features that are common in applied IV research. Standard 2SLS inference remains valid for \est, and confidence bands maintain correct coverage at the same width.
 
 
 \section{Empirical illustration}
