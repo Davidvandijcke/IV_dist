@@ -1,0 +1,189 @@
+% Working notes: Coefficient Projection Under Misspecification
+
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\calC}{\mathcal{C}}
+\newcommand{\calQ}{\mathcal{Q}}
+\newcommand{\T}{\mathsf{T}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{remark}{Remark}
+\newtheorem{assumption}{Assumption}
+
+\title{Coefficient Projection Under Misspecification}
+\author{Working Notes}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Setup}
+
+Consider the general setting where we do NOT assume the linear model is correctly specified. The true conditional quantile function is:
+\[
+Q_{Y|X=x}(u) = f(x, u)
+\]
+for some unknown function $f$ that may be nonlinear in $x$. We only assume $f(x, \cdot)$ is a valid quantile function (non-decreasing) for each $x$.
+
+The unconstrained 2SLS estimator targets:
+\[
+\beta^{unc} = \argmin_{\beta} \E\left[ \left( Q_{Y}(u) - \beta_0(u) - \beta_1(u)^\T(X - \mu_X) \right)^2 \right]
+\]
+This is the "best linear approximation" to the true conditional QF in an IV-weighted $L^2$ sense.
+
+\section{Population Target Under Misspecification}
+
+Define the constraint set:
+\[
+\calC = \left\{ \beta : q_\beta(x, \cdot) := \beta_0(\cdot) + \beta_1(\cdot)^\T(x - \mu_X) \in \calQ \text{ for all } x \in \mathcal{X} \right\}
+\]
+
+\begin{proposition}[Population Target]
+The population coefficient projection target is:
+\[
+\beta^* = \Pi_\calC(\beta^{unc}) = \argmin_{\beta \in \calC} \|\beta - \beta^{unc}\|_{\Sigma_{XX}}^2
+\]
+This is well-defined regardless of whether the linear model is correctly specified.
+\end{proposition}
+
+\textbf{Interpretation:} $\beta^*$ is "the best linear IV model that yields valid quantile functions for all $x$ in the support." This is analogous to how OLS identifies the best linear predictor even when the true CEF is nonlinear.
+
+\section{Improvement Property Under Misspecification}
+
+\begin{theorem}[Improvement Property - General]\label{thm:improvement_misspec}
+Let $\beta^* \in \calC$ be any target (not necessarily the true coefficient). Then for any estimator $\tilde{\beta}$:
+\[
+\|\Pi_\calC(\tilde{\beta}) - \beta^*\|_{\Sigma} \leq \|\tilde{\beta} - \beta^*\|_{\Sigma}
+\]
+with equality if and only if $\tilde{\beta} \in \calC$.
+\end{theorem}
+
+\begin{proof}
+Since $\calC$ is a closed convex set containing $\beta^*$, the projection $\Pi_\calC$ is non-expansive:
+\[
+\|\Pi_\calC(\tilde{\beta}) - \beta^*\| = \|\Pi_\calC(\tilde{\beta}) - \Pi_\calC(\beta^*)\| \leq \|\tilde{\beta} - \beta^*\|
+\]
+where the equality uses $\Pi_\calC(\beta^*) = \beta^*$ (since $\beta^* \in \calC$), and the inequality is the non-expansive property of projections onto closed convex sets.
+\end{proof}
+
+\begin{corollary}[Finite-Sample Improvement Under Misspecification]
+Let $\beta^* = \Pi_\calC(\beta^{unc})$ be the population coefficient projection target (which may differ from the true $\beta$ under misspecification). Then:
+\[
+\|\hat{\beta}^* - \beta^*\|_{\Sigma} \leq \|\tilde{\beta} - \beta^*\|_{\Sigma} \quad \text{a.s.}
+\]
+where $\tilde{\beta}$ is the unconstrained 2SLS estimator and $\hat{\beta}^* = \Pi_\calC(\tilde{\beta})$.
+\end{corollary}
+
+\begin{remark}[Key Point]
+The improvement property does NOT require correct specification. It says: the coefficient projection estimator is always closer to its population target than the unconstrained estimator, regardless of whether that target equals the "true" coefficient function.
+\end{remark}
+
+\section{Translating to Quantile Function Space}
+
+Under misspecification, we want to show that the projected estimator also improves estimation of the structural quantile function.
+
+\begin{proposition}[Improvement in QF Space]
+Let $q^*(x, u) = \beta_0^*(u) + \beta_1^*(u)^\T(x - \mu_X)$ be the population target QF. Then:
+\[
+\E_X\left[ \int_0^1 (\hat{q}^*(X, u) - q^*(X, u))^2 du \right] \leq \E_X\left[ \int_0^1 (\tilde{q}(X, u) - q^*(X, u))^2 du \right]
+\]
+where $\hat{q}^*$ uses the projected coefficients and $\tilde{q}$ uses the unconstrained coefficients.
+\end{proposition}
+
+\begin{proof}
+Expanding:
+\begin{align}
+\E_X\left[ \int_0^1 (\hat{q}^*(X, u) - q^*(X, u))^2 du \right] 
+&= \E_X\left[ \int_0^1 \left( (\hat{\beta}^* - \beta^*)_0 + (\hat{\beta}^* - \beta^*)_1^\T(X - \mu_X) \right)^2 du \right] \\
+&= \int_0^1 (\hat{\beta}^*(u) - \beta^*(u))^\T \Sigma_{XX} (\hat{\beta}^*(u) - \beta^*(u)) du \\
+&= \|\hat{\beta}^* - \beta^*\|_{\Sigma_{XX}}^2
+\end{align}
+where $\Sigma_{XX} = \begin{pmatrix} 1 & 0 \\ 0 & \text{Var}(X) \end{pmatrix}$ for centered $X$.
+
+The result follows from Theorem~\ref{thm:improvement_misspec}.
+\end{proof}
+
+\section{Comparison to CLP/Melly-Pons}
+
+Both CLP and coefficient projection impose linearity:
+\[
+q(x, u) = \beta_0(u) + \beta_1(u)^\T(x - \mu_X)
+\]
+
+\textbf{CLP approach:}
+\begin{itemize}
+\item Estimates $\beta(u)$ via two-step procedure (individual QR + group GMM)
+\item Does NOT project to ensure monotonicity
+\item Resulting $\hat{q}(x, \cdot)$ may violate monotonicity
+\item Under misspecification: targets best linear approximation, but estimate may not be valid QF
+\end{itemize}
+
+\textbf{Coefficient Projection:}
+\begin{itemize}
+\item Estimates $\beta(u)$ via 2SLS, then projects onto $\calC$
+\item Guarantees $\hat{q}(x, \cdot) \in \calQ$ for all $x \in \mathcal{X}$
+\item Under misspecification: targets best linear approximation IN $\calC$
+\item Always yields valid quantile functions
+\end{itemize}
+
+\begin{proposition}[Dominance Over CLP Under Misspecification]
+Let $\beta^{CLP}$ denote the CLP estimator and $\beta^* = \Pi_\calC(\beta^{unc})$ be the population target. If $\beta^{CLP}$ and $\tilde{\beta}$ (unconstrained 2SLS) have the same probability limit $\beta^{unc}$, then:
+\[
+\|\hat{\beta}^* - \beta^*\|_\Sigma \leq \|\beta^{CLP} - \beta^*\|_\Sigma \quad \text{asymptotically}
+\]
+with strict inequality when $\beta^{unc} \notin \calC$ (i.e., when monotonicity violations occur).
+\end{proposition}
+
+\textbf{Intuition:} CLP targets $\beta^{unc}$ which may lie outside $\calC$. Coefficient projection targets $\beta^* = \Pi_\calC(\beta^{unc})$, which is in $\calC$ by construction. The projected estimator is closer to its target than CLP is to the same target.
+
+\section{Asymptotic Theory Under Misspecification}
+
+\begin{assumption}[Projected Endpoint Strictness]\label{ass:proj_strict}
+The population coefficient projection $\beta^* = \Pi_\calC(\beta^{unc})$ satisfies: there exists $\kappa > 0$ such that for all endpoints $v$ of $\mathcal{X}$:
+\[
+\gamma_v(\beta^*)(u') - \gamma_v(\beta^*)(u) \geq \kappa(u' - u) \quad \text{for all } u < u'.
+\]
+\end{assumption}
+
+\begin{remark}
+This assumption does NOT require the linear model to be correctly specified. It only requires that the population projection $\beta^*$ implies strictly increasing QFs at the extreme points. This is a condition on how "bad" the misspecification can be — if the best linear approximation (after projection) has nearly flat QFs at the boundaries, the constraint may be active asymptotically.
+\end{remark}
+
+\begin{theorem}[Asymptotic Equivalence Under Misspecification]
+Suppose Assumption~\ref{ass:proj_strict} holds. Then:
+\[
+\sqrt{n}(\hat{\beta}^* - \beta^*) \leadsto \mathbb{G}_\beta
+\]
+where $\mathbb{G}_\beta$ is the same limiting Gaussian process as for the unconstrained estimator $\tilde{\beta}$.
+\end{theorem}
+
+\begin{proof}[Proof Sketch]
+Under Assumption~\ref{ass:proj_strict}, $\beta^*$ lies in the interior of $\calC$. The unconstrained estimator satisfies $\tilde{\beta} \to_p \beta^{unc}$. For $n$ large, $\tilde{\beta}$ is close to $\beta^{unc}$, and since $\beta^* = \Pi_\calC(\beta^{unc})$ is in the interior, with high probability $\tilde{\beta}$ is also in the interior or its projection equals the unconstrained value at the relevant points. The constraint becomes asymptotically inactive.
+\end{proof}
+
+\section{Summary}
+
+Under misspecification:
+
+\begin{enumerate}
+\item \textbf{Population target is well-defined:} $\beta^* = \Pi_\calC(\beta^{unc})$ — the best linear IV model yielding valid QFs.
+
+\item \textbf{Improvement property holds:} Coefficient projection always reduces error relative to the unconstrained estimator, measured against the population target $\beta^*$.
+
+\item \textbf{Valid QFs guaranteed:} Unlike CLP, coefficient projection always yields valid quantile functions.
+
+\item \textbf{Asymptotic theory allows misspecification:} Under projected endpoint strictness, the estimator is asymptotically equivalent to the unconstrained estimator.
+
+\item \textbf{Interpretation:} The coefficient projection estimand is "the best linear IV approximation to the conditional QF that itself constitutes a valid QF for all $x$ in the support."
+\end{enumerate}
+
+\end{document}

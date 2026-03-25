@@ -1,0 +1,742 @@
+\documentclass[12pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{bm}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage[dvipsnames]{xcolor}
+\definecolor{darkblue}{rgb}{0, 0, 0.5}
+\hypersetup{
+     colorlinks = true,
+     citecolor = Maroon,
+     urlcolor = darkblue,
+     linkcolor = darkblue
+}
+\usepackage{setspace}
+\usepackage{enumerate}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\usepackage{comment}
+
+\geometry{margin=1in}
+
+% Custom commands
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Tr}{\mathrm{Tr}}
+\newcommand{\T}{\mathsf{T}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\calP}{\mathcal{Y}}
+\newcommand{\calQ}{\mathcal{Q}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\indep}{\perp \!\!\! \perp}
+\newcommand{\PiQ}{\Pi_{\mathcal{Q}}}
+\newcommand{\toP}{ \overset{p}{\to}}
+\newcommand{\xbar}{\underline{x}}
+\newcommand{\xbaru}{\bar{x}}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma} 
+\newtheorem{proposition}{Proposition} 
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+\newtheorem{remark}{Remark}
+
+\title{Coefficient Projection in Functional IV Regression: \\ A Constrained Fréchet Regression Approach}
+\author{Working Notes}
+\date{\today}
+
+\onehalfspacing
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We develop a coefficient projection approach for Functional IV Regression (FIVR) with distributional outcomes. The method can be viewed as Fréchet IV regression in the Wasserstein space, constrained so that the predicted conditional distributions are valid probability measures. Rather than projecting quantile functions pointwise in $x$, we project the coefficient functions $\beta(u)$ onto the set $\mathcal{C}$ of coefficients that yield valid quantile functions for all $x$ in the support. We show that this constraint set admits a simple characterization via extreme points of the support (reducing to two endpoint constraints for scalar $X$). 
+
+The key theoretical result is a finite-sample $L^2$ improvement guarantee: the projected estimator is always at least as close to the sample-feasible target $\beta^*_n = \Pi_{\mathcal{C}_n}(\beta^{\text{unc}})$ as the unconstrained estimator, with probability one. This follows from the contraction property of projections onto closed convex sets in Hilbert spaces. Under correct specification, $\beta^*_n \to \beta$ and the improvement is relative to the truth asymptotically. Under misspecification, $\beta^*_n$ converges to the best linear IV model that produces valid distributions---a natural target when the linear model is an approximation. We establish asymptotic equivalence to the unconstrained estimator when the population IV-weighted quantile functions are strictly increasing---a condition that allows for misspecification of the linear model.
+\end{abstract}
+
+\section{Introduction and Motivation}
+
+\subsection{Fréchet Regression Perspective}
+
+Consider regression with distributional outcomes. Following the Fréchet regression framework \cite{petersen2019frechet}, we seek to model the conditional distribution of an outcome $Y$ given covariates $X$. When the outcome space is the Wasserstein space $(\mathcal{W}, d_{\mathcal{W}})$ of probability distributions with finite second moments, Fréchet regression minimizes:
+\begin{equation}\label{eq:frechet-obj}
+m(x) = \argmin_{\nu \in \mathcal{W}} \E[d_{\mathcal{W}}^2(\nu, Y) \mid X = x].
+\end{equation}
+
+A key insight is that for univariate distributions, the Wasserstein space admits a \emph{linear structure} through the quantile function representation. The 2-Wasserstein distance becomes an $L^2$ distance:
+\[
+d_{\mathcal{W}}^2(\mu, \nu) = \int_0^1 \left( Q_\mu(u) - Q_\nu(u) \right)^2 du = \|Q_\mu - Q_\nu\|_{L^2}^2,
+\]
+where $Q_\mu, Q_\nu$ are the quantile functions. This transforms the Fréchet regression problem into regression in a Hilbert space, but with the crucial constraint that the output must be a \emph{valid quantile function}---i.e., non-decreasing.
+
+\subsection{From Fréchet Regression to Distribution-Valued IV}
+
+In the presence of endogeneity---when $X$ is correlated with unobserved factors affecting $Y$---standard Fréchet regression is inconsistent. We require instrumental variables. The \textbf{Functional IV Regression (FIVR)} approach extends Fréchet regression to the IV setting:
+\begin{enumerate}
+\item \textbf{First stage (IV estimation):} Compute IV-weighted averages of group-level quantile functions
+\item \textbf{Second stage (projection):} Project onto the space of valid quantile functions $\calQ$
+\end{enumerate}
+
+In the original pointwise FIVR approach, the second stage projects separately for each evaluation point $x$. This ensures each conditional quantile function is valid, but does not exploit the linear structure when a parametric model is assumed.
+
+\subsection{The Coefficient Projection Alternative}
+
+\textbf{Key Insight:} If the true conditional quantile function satisfies a linear model:
+\[
+q(x,u) = \beta_0(u) + \beta_1(u)^\T (x - \mu_X),
+\]
+then the constraint that $q(x,\cdot) \in \calQ$ for \emph{all} $x$ in the support $\mathcal{X}$ places restrictions directly on the coefficient functions $\beta(u) = (\beta_0(u), \beta_1(u)^\T)^\T$. Rather than projecting quantile functions pointwise, we can project the \emph{coefficient functions} onto the set $\mathcal{C}$ of coefficients that yield valid quantile functions everywhere.
+
+This reformulates the problem as \textbf{constrained Fréchet IV regression}: we seek the linear IV estimator closest to the unconstrained solution, subject to the constraint that the resulting conditional distributions are valid probability measures for all $x$ in the support.
+
+\textbf{When This Matters:} The entire motivation for quantile IV estimation is that treatment effects vary across the outcome distribution---i.e., $\beta_1(u)$ is not constant in $u$. If effects were homogeneous, standard 2SLS would suffice. All empirically relevant applications therefore involve heterogeneous $\beta(u)$, and it is precisely this heterogeneity that generates monotonicity violations in finite-sample estimates, making projection methods valuable.
+
+\section{Constraint Set Characterization}
+
+\subsection{General Setup}
+
+Let $\mathcal{X} \subseteq \R^p$ denote the support of $X$, and let $\mu_X = \E[X]$. Define the constraint set:
+\begin{equation}
+\mathcal{C} = \left\{ b : [0,1] \to \R^{p+1} : u \mapsto b_0(u) + b_1(u)^\T(x - \mu_X) \text{ is non-decreasing for all } x \in \mathcal{X} \right\}.
+\end{equation}
+
+\begin{lemma}[Cone Structure]
+$\mathcal{C}$ is a closed convex cone in $L^2([0,1])^{p+1}$.
+\end{lemma}
+
+\begin{proof}
+Convexity: If $b, b' \in \mathcal{C}$ and $\lambda \in [0,1]$, then for all $x \in \mathcal{X}$,
+\[
+[\lambda b + (1-\lambda) b']_0(u) + [\lambda b + (1-\lambda) b']_1(u)^\T(x-\mu_X) = \lambda q_b(x,u) + (1-\lambda) q_{b'}(x,u)
+\]
+is non-decreasing in $u$ as a convex combination of non-decreasing functions.
+
+Cone: If $b \in \mathcal{C}$ and $\alpha \geq 0$, then $\alpha b \in \mathcal{C}$ since scaling preserves monotonicity.
+
+Closedness: Let $\{b^{(n)}\} \subset \mathcal{C}$ with $b^{(n)} \to b$ in $L^2$. For any $x \in \mathcal{X}$ and $u < u'$,
+\[
+q_{b^{(n)}}(x,u') - q_{b^{(n)}}(x,u) \geq 0 \quad \forall n.
+\]
+Taking the limit (using $L^2$ convergence implies pointwise convergence a.e.\ on a subsequence) yields $q_b(x,u') - q_b(x,u) \geq 0$.
+\end{proof}
+
+\subsection{Scalar Regressor Case}
+
+For the important special case of scalar $X \in [\xbar, \xbaru]$, the constraint set admits a simple characterization.
+
+\begin{theorem}[Endpoint Characterization for Scalar $X$]\label{thm:endpoint}
+Let $X \in [\xbar, \xbaru]$ be scalar with mean $\mu_X$. Define:
+\begin{align}
+a_- &= \xbar - \mu_X, \\
+a_+ &= \xbaru - \mu_X, \\
+\gamma_-(b)(u) &= b_0(u) + a_- b_1(u), \\
+\gamma_+(b)(u) &= b_0(u) + a_+ b_1(u).
+\end{align}
+Then:
+\begin{equation}
+\mathcal{C} = \left\{ b \in L^2([0,1])^2 : \gamma_-(b) \in \calQ \text{ and } \gamma_+(b) \in \calQ \right\},
+\end{equation}
+where $\calQ$ is the space of non-decreasing functions on $[0,1]$.
+\end{theorem}
+
+\subsection{General Multivariate Case}
+
+For multivariate $X \in \R^p$ with convex support $\mathcal{X}$, the constraint set is characterized by the extreme points of the support.
+
+\begin{theorem}[Vertex Characterization for Polytope Support]\label{thm:vertex}
+Suppose the convex hull of the support of $X$, denoted $\text{conv}(\mathcal{X})$, is a polytope with vertices $\{v_1, \dots, v_K\}$. For $b = (b_0, b_1^\T)^\T$, define the vertex quantile functions:
+\[
+\gamma_k(b)(u) = b_0(u) + b_1(u)^\T (v_k - \mu_X), \quad k=1,\dots,K.
+\]
+Then:
+\begin{equation}
+\mathcal{C} = \left\{ b : \gamma_k(b) \in \calQ \text{ for all } k=1,\dots,K \right\}.
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Any $x \in \text{conv}(\mathcal{X})$ can be written as a convex combination of the vertices: $x = \sum_{k=1}^K \lambda_k v_k$ with $\lambda_k \geq 0, \sum \lambda_k = 1$. By linearity:
+\[
+q_b(x, u) = b_0(u) + b_1(u)^\T (x - \mu_X) = \sum_{k=1}^K \lambda_k \gamma_k(b)(u).
+\]
+Since a convex combination of non-decreasing functions is non-decreasing, monotonicity at the vertices implies monotonicity everywhere in the convex hull. Conversely, since $v_k \in \mathcal{X}$, monotonicity everywhere implies monotonicity at the vertices.
+\end{proof}
+
+\begin{example}[Box Constraints]
+If $X_j \in [L_j, U_j]$ for $j=1,\dots,p$, the support is a hyperrectangle with $K=2^p$ vertices. The constraint set $\mathcal{C}$ is defined by $2^p$ isotonic constraints.
+\end{example}
+
+\section{The Coefficient Projection Estimator}
+
+\subsection{The Unconstrained IV Estimator}
+
+The first stage of our estimator constructs IV coefficients for the quantile function, treating it as a functional outcome. This is \textbf{2SLS applied to quantile functions}---not quantile regression, but rather IV regression where the outcome at each quantile level $u$ is the quantile value $Q_Y(u)$.
+
+\textbf{Population IV Moment Conditions.} The structural model is:
+\[
+Q_{Y_j}(u) = \beta_0(u) + \beta_1(u)^\T (X_j - \mu_X) + \varepsilon_j(u),
+\]
+where $\E[\varepsilon_j(u) \mid Z_j] = 0$ but potentially $\E[\varepsilon_j(u) \mid X_j] \neq 0$ (endogeneity). The IV moment conditions are:
+\[
+\E[(Z_j - \mu_Z) \varepsilon_j(u)] = 0 \quad \Leftrightarrow \quad \E[(Z_j - \mu_Z) Q_{Y_j}(u)] = \Sigma_{ZX} \beta_1(u).
+\]
+
+\textbf{IV Weight Function.} Define the IV weight function:
+\begin{equation}\label{eq:iv-weights}
+s(Z_j, x) := 1 + (x-\mu_X)^\T (\Sigma_{ZX}^\T\Sigma_{ZZ}^{-1}\Sigma_{ZX})^{-1} \Sigma_{ZX}^\T\Sigma_{ZZ}^{-1} \tilde{Z}_j,
+\end{equation}
+where $\tilde{Z}_j = Z_j - \mu_Z$, $\Sigma_{ZZ} = \E[\tilde{Z}_j\tilde{Z}_j^\T]$, and $\Sigma_{ZX} = \E[\tilde{Z}_j(X_j-\mu_X)^\T]$.
+
+The IV-weighted average quantile function at evaluation point $x$ is:
+\begin{equation}\label{eq:psi-weighted}
+\psi_x(u) := \E[s(Z_j, x) Q_{Y_j}(u)].
+\end{equation}
+This is the FIVR analog of the fitted value $\hat{Y} = X\hat{\beta}^{IV}$ in standard 2SLS, but for distributional outcomes.
+
+\textbf{Unconstrained IV Coefficients.} The 2SLS estimator for the coefficient functions is:
+\begin{align}
+\tilde{\beta}_0(u) &= \E[Q_{Y_j}(u)], \label{eq:beta0-iv}\\
+\tilde{\beta}_1(u) &= (\Sigma_{ZX}^\T\Sigma_{ZZ}^{-1}\Sigma_{ZX})^{-1} \Sigma_{ZX}^\T\Sigma_{ZZ}^{-1} \E[\tilde{Z}_j Q_{Y_j}(u)]. \label{eq:beta1-iv}
+\end{align}
+
+For scalar $X$ and $Z$, this simplifies to the familiar IV formula:
+\begin{equation}\label{eq:iv-scalar}
+\tilde{\beta}_1(u) = \frac{\Cov(Z, Q_Y(u))}{\Cov(Z, X)} = \frac{\E[\tilde{Z}_j Q_{Y_j}(u)]}{\E[\tilde{Z}_j (X_j - \mu_X)]}.
+\end{equation}
+
+\textbf{Connection to Fréchet IV Regression.} In the Wasserstein space, $\tilde{\beta}(u)$ is the solution to unconstrained Fréchet IV regression: it minimizes the expected squared Wasserstein distance between the predicted distribution $q(\cdot, u) = \beta_0(u) + \beta_1(u)^\T(X - \mu_X)$ and the observed distributions, using IV identification. However, there is no guarantee that $\tilde{q}(x, \cdot) = \tilde{\beta}_0(\cdot) + \tilde{\beta}_1(\cdot)^\T(x - \mu_X)$ is a valid (monotone) quantile function for all $x$.
+
+\subsection{Definition of the Coefficient Projection Estimator}
+
+Let $\tilde{\beta}(u) = (\tilde{\beta}_0(u), \tilde{\beta}_1(u)^\T)^\T$ denote the unconstrained IV estimator defined above. The \textbf{coefficient projection estimator} is defined as the solution to:
+\begin{equation}\label{eq:coef-proj-def}
+\hat{\beta}^*(u) = \argmin_{b \in \mathcal{C}} \int_0^1 \|b(u) - \tilde{\beta}(u)\|_{\Sigma_{XX}}^2 \, du,
+\end{equation}
+where $\|\cdot\|_{\Sigma_{XX}}^2 = (\cdot)^\T \Sigma_{XX} (\cdot)$ with $\Sigma_{XX} = \E[(1, X-\mu_X)^\T(1, X-\mu_X)]$.
+
+\begin{remark}[Fréchet Minimization Interpretation]\label{rem:frechet-interp}
+The objective in \eqref{eq:coef-proj-def} equals the \textbf{expected $L^2$ distance} between the predicted and target quantile curves, integrated over the covariate distribution:
+\begin{align}
+\E_X\left[ \int_0^1 \big| q_b(X, u) - \tilde{q}(X, u) \big|^2 du \right]
+&= \int_0^1 \E_X\left[ \big| (b(u) - \tilde{\beta}(u))^\T (1, X-\mu_X)^\T \big|^2 \right] du \notag \\
+&= \int_0^1 (b(u) - \tilde{\beta}(u))^\T \Sigma_{XX} (b(u) - \tilde{\beta}(u)) \, du \notag \\
+&= \int_0^1 \|b(u) - \tilde{\beta}(u)\|_{\Sigma_{XX}}^2 \, du.
+\end{align}
+When both $q_b(x, \cdot)$ and $\tilde{q}(x, \cdot)$ are valid quantile functions (i.e., non-decreasing), this $L^2$ distance coincides with the squared 2-Wasserstein distance $d_{\mathcal{W}}^2$. The constraint $b \in \mathcal{C}$ ensures that the optimum $\hat{\beta}^*$ produces valid quantile functions, so the Wasserstein interpretation is exact for the projected estimator.
+
+Thus, coefficient projection solves the \textbf{constrained Fréchet IV regression} problem: find the linear model (Wasserstein barycenter path) that minimizes expected $W_2^2$ distance to the IV-estimated conditional distributions, subject to the constraint that the predicted distribution at each $x$ is a valid probability measure.
+\end{remark}
+
+\subsection{Explicit Form for Scalar $X$}
+
+For scalar $X$, the $\Sigma_{XX}$-weighted norm becomes:
+\begin{equation}
+\|b\|_{\Sigma}^2 = b_0^2 + \sigma_X^2 b_1^2,
+\end{equation}
+which follows directly from the block-diagonal structure $\Sigma_{XX} = \text{diag}(1, \sigma_X^2)$ after centering.
+
+Writing $\gamma_\pm = b_0 + a_\pm b_1$, we have:
+\begin{align}
+b_0 &= \frac{a_+ \gamma_- - a_- \gamma_+}{a_+ - a_-}, \\
+b_1 &= \frac{\gamma_+ - \gamma_-}{a_+ - a_-}.
+\end{align}
+
+The problem can be reformulated in terms of $(\gamma_-, \gamma_+)$:
+\begin{equation}
+(\hat{\gamma}_-^*, \hat{\gamma}_+^*) = \argmin_{\gamma_-, \gamma_+ \in \calQ} \int_0^1 \left\| \begin{pmatrix} \gamma_-(u) \\ \gamma_+(u) \end{pmatrix} - \begin{pmatrix} \tilde{\gamma}_-(u) \\ \tilde{\gamma}_+(u) \end{pmatrix} \right\|_{\tilde{\Sigma}}^2 du,
+\end{equation}
+where $\tilde{\Sigma}$ is the transformed weighting matrix.
+
+\section{The Estimation Target and Improvement Theorem}
+
+\subsection{The Population Target}
+
+Let $\beta^{\text{unc}}(u)$ denote the population unconstrained IV coefficients---the probability limit of $\tilde{\beta}(u)$. This is the solution to unconstrained Fréchet IV regression: the linear model minimizing expected $W_2^2$ distance using IV identification. However, $\beta^{\text{unc}}$ may not lie in $\mathcal{C}$, meaning the implied quantile functions $\tilde{q}(x, \cdot) = \beta_0^{\text{unc}}(\cdot) + \beta_1^{\text{unc}}(\cdot)^\T(x - \mu_X)$ may violate monotonicity for some $x$.
+
+We define the \textbf{coefficient projection target} as:
+\begin{equation}\label{eq:target}
+\beta^* := \Pi_{\mathcal{C}}(\beta^{\text{unc}}) = \argmin_{b \in \mathcal{C}} \int_0^1 \|b(u) - \beta^{\text{unc}}(u)\|_{\Sigma_{XX}}^2 \, du.
+\end{equation}
+
+\textbf{Interpretation:} $\beta^*$ is the \emph{best constrained linear IV approximation}---the linear model closest to the unconstrained IV solution (in the $\Sigma_{XX}$-weighted $L^2$ sense) that produces valid quantile functions for all $x$ in the support. Equivalently, $\beta^*$ solves the constrained Fréchet IV regression problem: minimize expected $W_2^2$ distance subject to outputs being valid probability measures.
+
+\begin{remark}[Correct Specification as Special Case]
+When the true conditional quantile function is linear with coefficients $\beta$, we have $\beta^{\text{unc}} = \beta$. If additionally the true model produces valid quantile functions ($\beta \in \mathcal{C}$), then $\beta^* = \Pi_{\mathcal{C}}(\beta) = \beta$. Thus, under correct specification, the target $\beta^*$ coincides with the true parameter.
+\end{remark}
+
+\subsection{The Improvement Theorem}
+
+The following result is the key theoretical contribution. It relies only on the contraction property of metric projections onto closed convex sets in Hilbert spaces.
+
+Let $\mathcal{C}_n$ denote the sample constraint set, defined using the vertices of $\text{conv}(\{X_1, \dots, X_n\})$. We define the \textbf{sample-feasible target}:
+\begin{equation}\label{eq:sample-target}
+\beta^*_n := \Pi_{\mathcal{C}_n}(\beta^{\text{unc}}) = \argmin_{b \in \mathcal{C}_n} \int_0^1 \|b(u) - \beta^{\text{unc}}(u)\|_{\Sigma_{XX}}^2 \, du,
+\end{equation}
+the projection of the population unconstrained IV coefficients onto the sample constraint set. Since $\mathcal{C}_n$ is determined by the sample convex hull (which can be larger or smaller than the population support), $\beta^*_n$ adjusts the target to the constraints actually enforced by the estimator.
+
+\begin{theorem}[Finite-Sample $L^2$ Improvement]\label{thm:improvement}
+For any realization of the sample, the projected estimator $\hat{\beta}^* = \Pi_{\mathcal{C}_n}(\tilde{\beta})$ satisfies:
+\begin{equation}
+\|\hat{\beta}^{*} - \beta^*_n\|_{\Sigma_{XX}, L^2} \leq \|\tilde{\beta} - \beta^*_n\|_{\Sigma_{XX}, L^2}
+\end{equation}
+with probability one, where $\|b\|_{\Sigma_{XX}, L^2}^2 = \int_0^1 \|b(u)\|_{\Sigma_{XX}}^2 du$. The inequality is strict whenever $\tilde{\beta} \notin \mathcal{C}_n$.
+
+More generally, for any $b \in \mathcal{C}_n$:
+\begin{equation}\label{eq:oracle-ineq}
+\|\hat{\beta}^* - b\|_{\Sigma_{XX}, L^2} \leq \|\tilde{\beta} - b\|_{\Sigma_{XX}, L^2}.
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+The key is the \textbf{contraction property} of projections onto closed convex sets in Hilbert spaces. For any closed convex set $K$ in a Hilbert space $H$:
+\[
+\|\Pi_K(x) - \Pi_K(y)\| \leq \|x - y\| \quad \text{for all } x, y \in H.
+\]
+
+The $\Sigma_{XX}$-weighted $L^2$ space is a Hilbert space with inner product $\langle a, b \rangle = \int_0^1 a(u)^\T \Sigma_{XX} b(u) \, du$, and $\mathcal{C}_n$ is a closed convex subset (Lemma 1).
+
+For the oracle inequality \eqref{eq:oracle-ineq}: let $b \in \mathcal{C}_n$. Then $\Pi_{\mathcal{C}_n}(b) = b$. By the contraction property:
+\[
+\|\hat{\beta}^{*} - b\| = \|\Pi_{\mathcal{C}_n}(\tilde{\beta}) - \Pi_{\mathcal{C}_n}(b)\| \leq \|\tilde{\beta} - b\|.
+\]
+The main result follows by taking $b = \beta^*_n \in \mathcal{C}_n$.
+
+Strictness when $\tilde{\beta} \notin \mathcal{C}_n$: by the variational characterization of projections, $\langle \tilde{\beta} - \hat{\beta}^*, b - \hat{\beta}^* \rangle \leq 0$ for all $b \in \mathcal{C}_n$. When $\tilde{\beta} \neq \hat{\beta}^*$ (i.e., $\tilde{\beta} \notin \mathcal{C}_n$), expanding $\|\tilde{\beta} - b\|^2 = \|\tilde{\beta} - \hat{\beta}^*\|^2 + 2\langle \tilde{\beta} - \hat{\beta}^*, \hat{\beta}^* - b\rangle + \|\hat{\beta}^* - b\|^2 \geq \|\tilde{\beta} - \hat{\beta}^*\|^2 + \|\hat{\beta}^* - b\|^2 > \|\hat{\beta}^* - b\|^2$.
+\end{proof}
+
+\begin{corollary}[Correct Specification]\label{cor:correct-spec}
+When the linear model is correctly specified ($\beta^{\text{unc}} = \beta \in \mathcal{C}$) and $\mathcal{C} \subseteq \mathcal{C}_n$ (which holds when $\mathcal{X}_n \subseteq \mathcal{X}$, i.e., all sample observations lie in the population support), we have $\beta \in \mathcal{C}_n$ and:
+\begin{equation}
+\|\hat{\beta}^{*} - \beta\|_{\Sigma_{XX}, L^2} \leq \|\tilde{\beta} - \beta\|_{\Sigma_{XX}, L^2} \quad \text{a.s.}
+\end{equation}
+The projected estimator is always at least as close to the truth as the unconstrained estimator.
+\end{corollary}
+
+\begin{remark}[Interpretation Under Misspecification]
+The sample-feasible target $\beta^*_n$ represents the best constrained linear IV approximation given the sample support. The improvement theorem guarantees that the constrained estimator $\hat{\beta}^*$ is closer to this target than the unconstrained $\tilde{\beta}$, regardless of whether the linear model is correctly specified. As $n \to \infty$, the sample convex hull $\mathcal{X}_n$ converges to $\text{conv}(\mathcal{X})$, so $\mathcal{C}_n \to \mathcal{C}$ and $\beta^*_n \to \beta^* = \Pi_{\mathcal{C}}(\beta^{\text{unc}})$, recovering the population improvement.
+\end{remark}
+
+\begin{remark}[Oracle vs.\ Implementable]
+The theorem assumes we observe $\tilde{\beta}(u)$ as a continuous function over $u \in [0,1]$. In practice, we estimate at a fine grid $u_1, \ldots, u_m$ and interpolate. This discretization error is typically negligible compared to estimation error when $m$ is moderately large. The result is therefore essentially operational.
+\end{remark}
+
+\subsection{Improvement for Quantile Functions}
+
+\begin{corollary}[$L^2$ Improvement for Quantile Functions]\label{cor:qf-improvement}
+Under the conditions of Theorem~\ref{thm:improvement}, the implied quantile function estimates satisfy:
+\begin{equation}
+\E_X\left[ \int_0^1 \big| \hat{q}^{*}(X, u) - q^*_n(X, u) \big|^2 du \right] \leq \E_X\left[ \int_0^1 \big| \tilde{q}(X, u) - q^*_n(X, u) \big|^2 du \right],
+\end{equation}
+where $q^*_n(x, u) = \beta_{0,n}^*(u) + \beta_{1,n}^*(u)^\T(x - \mu_X)$ is the quantile function implied by the sample-feasible target $\beta^*_n$.
+
+Since both $\hat{q}^*(x, \cdot)$ and $q^*_n(x, \cdot)$ are valid (non-decreasing) quantile functions for $x \in \text{conv}(\mathcal{X}_n)$, the $L^2$ distance on the left-hand side equals $d_{\mathcal{W}}^2(\hat{q}^*(X, \cdot), q^*_n(X, \cdot))$. Under correct specification with $\mathcal{C} \subseteq \mathcal{C}_n$, this becomes improvement relative to the true conditional quantile function.
+\end{corollary}
+
+\begin{proof}
+This follows immediately from Theorem~\ref{thm:improvement} and the identity in Remark~\ref{rem:frechet-interp}:
+\[
+\E_X\left[ \int_0^1 |q_b(X, u) - q^*_n(X, u)|^2 du \right] = \int_0^1 \|b(u) - \beta^*_n(u)\|_{\Sigma_{XX}}^2 \, du.
+\]
+\end{proof}
+
+\subsection{Improvement in Unweighted $L^2$ Norm}
+
+The improvement theorem holds in whatever norm we use for projection. If we project in the unweighted $L^2$ norm instead of the $\Sigma_{XX}$-weighted norm, we obtain improvement relative to the corresponding target.
+
+\begin{corollary}[Unweighted $L^2$ Improvement]\label{cor:unweighted}
+Let $\mathcal{C}_n$ be the sample constraint set and define the unweighted sample-feasible target:
+\[
+\beta^*_{n,L^2} := \argmin_{b \in \mathcal{C}_n} \int_0^1 \|b(u) - \beta^{\text{unc}}(u)\|^2 \, du,
+\]
+and the unweighted projected estimator $\hat{\beta}^*_{L^2} = \Pi_{\mathcal{C}_n}^{L^2}(\tilde{\beta})$. Then:
+\begin{equation}
+\|\hat{\beta}^*_{L^2} - \beta^*_{n,L^2}\|_{L^2} \leq \|\tilde{\beta} - \beta^*_{n,L^2}\|_{L^2} \quad \text{a.s.}
+\end{equation}
+\end{corollary}
+
+\begin{remark}[Choice of Norm]
+The $\Sigma_{XX}$-weighted norm is natural from the Fréchet regression perspective (it equals expected $W_2^2$ over the covariate distribution). The unweighted $L^2$ norm treats all coefficient dimensions equally. Under correct specification, both targets coincide with the true $\beta$. Under misspecification, they may differ slightly, but both represent sensible ``best constrained linear approximations'' in their respective metrics.
+\end{remark}
+
+\begin{remark}[Coefficient Projection vs.\ Pointwise Projection]\label{rem:pw-comparison}
+Let $\hat{\beta}^{pw}(u)$ denote the coefficient obtained by first projecting $\hat{\psi}_x(u)$ onto $\calQ$ pointwise for each $x$, then regressing on $X$. A key structural difference is that $\hat{\beta}^* \in \mathcal{C}_n$ by construction (the coefficient projection estimator satisfies the joint monotonicity constraint), while $\hat{\beta}^{pw} \notin \mathcal{C}_n$ in general---the pointwise-then-regress procedure does not enforce joint monotonicity across $x$.
+
+Monte Carlo simulations reveal that for scalar $X$, the two estimators are nearly identical in practice (MSE difference $< 0.5\%$). The intuition is as follows: when $X$ is centered, PAVA adjustments at observations with $X_k > \mu_X$ have the opposite sign of adjustments at observations with $X_k < \mu_X$. These opposing adjustments approximately cancel in the OLS regression step, yielding coefficients close to those from joint projection. The advantage of coefficient projection becomes more pronounced in the multivariate case ($p \geq 2$), where the interaction between multiple regressors prevents this cancellation (see Section~6.3 for simulation evidence).
+\end{remark}
+
+\section{Asymptotic Theory}
+
+We establish asymptotic properties relative to the population target $\beta^{\text{unc}}$. The key condition is that $\beta^{\text{unc}}$ lies in the interior of $\mathcal{C}$---meaning the population IV-weighted quantile functions are strictly increasing---which makes the constraints asymptotically inactive. This condition is the coefficient-space analog of the Average Strictness assumption used in the main paper for the pointwise projection, and it is compatible with misspecification of the linear model.
+
+\subsection{Interior Condition}
+
+\begin{assumption}[Strictly Increasing IV-Weighted Quantile Functions]\label{ass:endpoint_strict}
+The population unconstrained IV coefficients $\beta^{\text{unc}}$ satisfy: there exists $\kappa > 0$ such that for all vertices $v_k$ of $\text{conv}(\mathcal{X})$ and all $c < d$ with $[c,d] \subset [0,1]$:
+\begin{equation}
+\psi_{v_k}(d) - \psi_{v_k}(c) \geq \kappa(d-c),
+\end{equation}
+where $\psi_{v_k}(u) = \beta_0^{\text{unc}}(u) + \beta_1^{\text{unc}}(u)^\T(v_k - \mu_X)$ is the population IV-weighted quantile function at vertex $v_k$.
+\end{assumption}
+
+\begin{remark}
+Assumption~\ref{ass:endpoint_strict} states that the IV-weighted average quantile functions evaluated at the support vertices are uniformly strictly increasing. This ensures $\beta^{\text{unc}}$ lies in the \emph{interior} of $\mathcal{C}$, so that $\beta^* = \Pi_{\mathcal{C}}(\beta^{\text{unc}}) = \beta^{\text{unc}}$---the projection is inactive in population.
+
+Importantly, this assumption \emph{does not require correct specification}. The linear model $Q_{Y_j}(u) = \beta_0(u) + \beta_1(u)^\T(X_j - \mu_X) + \varepsilon_j(u)$ may be misspecified (the true conditional quantile function need not be linear), but the best linear IV approximation $\beta^{\text{unc}}$ can still produce strictly increasing quantile functions at the support vertices. This is the typical case when the outcome distributions have positive densities: the IV-weighted average inherits strict monotonicity from a non-negligible share of groups, exactly as in Assumption~3 of the main paper.
+
+The only scenario excluded is when the population IV-weighted quantile functions at some vertex have flat regions (atoms concentrated on the same percentile range). This would require the boundary/tangent-cone analysis of \cite{fang2018inference}; see Appendix~B of the main paper.
+\end{remark}
+
+\subsection{Main Asymptotic Result}
+
+\begin{theorem}[Asymptotic Equivalence]\label{thm:asymptotic}
+Suppose Assumption~\ref{ass:endpoint_strict} holds and $\|\tilde{\beta} - \beta^{\text{unc}}\|_{L^\infty} = o_p(1)$. Then $\beta^* = \beta^{\text{unc}}$ and:
+\[
+\sqrt{n}(\hat{\beta}^*(u) - \beta^{\text{unc}}(u)) \leadsto \mathbb{G}_\beta(u) \quad \text{in } \ell^\infty([0,1])^{p+1},
+\]
+where $\mathbb{G}_\beta$ is the same limiting Gaussian process as for the unconstrained estimator $\tilde{\beta}$ centered at $\beta^{\text{unc}}$.
+\end{theorem}
+
+\begin{proof}[Proof Sketch]
+The proof follows the standard approach for constrained estimation with an asymptotically inactive constraint. It parallels the argument for the pointwise projection in the main paper, using the full Hadamard differentiability of $\Pi_{\mathcal{C}}$ at interior points.
+
+\textbf{Step 1 ($\beta^{\text{unc}}$ in interior of $\mathcal{C}$):} Under Assumption~\ref{ass:endpoint_strict}, the vertex quantile functions $\psi_{v_k}(\cdot)$ are uniformly strictly increasing with slope at least $\kappa$. This means $\beta^{\text{unc}} \in \text{int}(\mathcal{C})$, and therefore $\beta^* = \Pi_{\mathcal{C}}(\beta^{\text{unc}}) = \beta^{\text{unc}}$.
+
+\textbf{Step 2 (CLT for unconstrained estimator):} $\sqrt{n}(\tilde{\beta} - \beta^{\text{unc}}) \leadsto \mathbb{G}_\beta$ in $\ell^\infty([0,1])^{p+1}$.
+
+\textbf{Step 3 (Asymptotic inactivity):} Since $\beta^{\text{unc}} \in \text{int}(\mathcal{C})$, there exists an $L^\infty$-neighborhood of $\beta^{\text{unc}}$ contained in $\mathcal{C}$. By the uniform convergence $\|\tilde{\beta} - \beta^{\text{unc}}\|_{L^\infty} \overset{p}{\to} 0$, the event $\{\tilde{\beta} \in \mathcal{C}\}$ has probability tending to 1. On this event, $\Pi_{\mathcal{C}}(\tilde{\beta}) = \tilde{\beta}$ (the projection is the identity when the point is already in the set).
+
+\textbf{Step 4 (Functional delta method):} Since $\Pi_{\mathcal{C}}$ is the identity in an $L^\infty$-neighborhood of $\beta^{\text{unc}}$, it is trivially (fully) Hadamard differentiable at $\beta^{\text{unc}}$ tangentially to $C([0,1])^{p+1}$, with derivative equal to the identity. By the functional delta method:
+\[
+\sqrt{n}(\hat{\beta}^* - \beta^{\text{unc}}) = \sqrt{n}(\Pi_{\mathcal{C}}(\tilde{\beta}) - \beta^{\text{unc}}) = \sqrt{n}(\tilde{\beta} - \beta^{\text{unc}}) + o_p(1) \leadsto \mathbb{G}_\beta.
+\]
+\end{proof}
+
+\begin{corollary}[Asymptotic Efficiency]
+Under Assumption~\ref{ass:endpoint_strict}, the coefficient projection estimator $\hat{\beta}^*$ achieves the same asymptotic variance as the unconstrained estimator, while having uniformly smaller finite-sample risk (by Theorem~\ref{thm:improvement}). This holds regardless of whether the linear model is correctly specified.
+\end{corollary}
+
+\begin{remark}[Inference]
+Since the asymptotic distribution is the same as the unconstrained estimator, standard bootstrap or analytical variance estimation for 2SLS can be used for inference on $\beta^{\text{unc}}$. Under correct specification, $\beta^{\text{unc}} = \beta$ and this provides valid inference on the true parameter. Under misspecification, it provides inference on the population unconstrained IV coefficient---which, under Assumption~\ref{ass:endpoint_strict}, coincides with $\beta^*$ (the best constrained linear approximation) since $\beta^{\text{unc}} \in \mathcal{C}$.
+\end{remark}
+
+\section{Algorithms}
+
+\subsection{Problem Structure}
+
+For scalar $X$, the coefficient projection problem reduces to a quadratic program (QP) with two isotonic constraints. For multivariate $X$ with polytope support (vertices $\{v_1, \dots, v_K\}$), it is a QP with $K$ isotonic constraints.
+
+\subsection{Multivariate QP Implementation}
+
+For moderate dimensions ($p \leq 8$), we can solve the problem exactly using standard QP solvers (e.g., `quadprog` in R/Python). On a quantile grid of size $G$, the problem has $G(p+1)$ variables and $K(G-1)$ linear inequality constraints.
+
+\begin{algorithm}
+\caption{Multivariate Coefficient Projection (QP)}
+\begin{algorithmic}[1]
+\State \textbf{Input:} Unconstrained coefficients $\tilde{\beta} \in \R^{G \times (p+1)}$; vertices $\{v_1, \dots, v_K\}$; covariance $\Sigma_{XX}$
+\State \textbf{Objective:} Minimize $\sum_{g=1}^G (\beta^g - \tilde{\beta}^g)^\T \Sigma_{XX} (\beta^g - \tilde{\beta}^g)$
+\State \textbf{Constraints:} For each vertex $k=1 \dots K$ and grid point $g=1 \dots G-1$:
+\[ \beta_0^{g+1} + (\beta_1^{g+1})^\T (v_k - \mu_X) \geq \beta_0^g + (\beta_1^g)^\T (v_k - \mu_X) \]
+\State \textbf{Output:} Constrained coefficients $\hat{\beta}^*$
+\end{algorithmic}
+\end{algorithm}
+
+For larger dimensions, alternating projection (ADMM) or coordinate descent approaches can be used, exploiting the fact that projection onto a single isotonic constraint is fast (PAVA).
+
+\section{Comparison with Original Approach}
+
+\subsection{Conceptual Differences}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{p{3cm}|p{5.5cm}|p{5.5cm}}
+\hline
+\textbf{Aspect} & \textbf{Pointwise Projection} & \textbf{Coefficient Projection} \\
+\hline
+Constraint & $\hat{Q}(x,\cdot) \in \calQ$ for each $x$ & $\hat{\beta} \in \mathcal{C}$ (jointly across $x$) \\
+\hline
+Projection & On quantile function space, per $x$ & On coefficient function space \\
+\hline
+Efficiency & Ignores cross-$x$ structure & Exploits linear structure \\
+\hline
+Computation & $M$ PAVA problems (one per group) & $2^p$ PAVA problems (one per vertex) \\
+\hline
+Monotonicity guarantee & Each $\hat{Q}(x,\cdot)$ monotone & Each $\hat{Q}(x,\cdot)$ monotone for $x \in \text{conv}(\mathcal{X})$ \\
+\hline
+MSE (scalar $X$) & Nearly identical & Nearly identical \\
+\hline
+MSE (multivariate $X$) & Baseline & 1--3\% lower \\
+\hline
+\end{tabular}
+\caption{Comparison of projection approaches. Monte Carlo simulations with heterogeneous $\beta(u)$ reveal that the two methods have essentially identical MSE for scalar $X$, with coefficient projection gaining a modest advantage when $p \geq 2$.}
+\end{table}
+
+\subsection{Comparison with Unconstrained Methods}
+
+Alternative linear IV estimators for quantile functions---such as \cite{chetverikov2016iv} (CLP) and Melly-Pons---do not enforce monotonicity constraints. This leads to a fundamental difference in targets.
+
+\begin{enumerate}
+    \item \textbf{CLP/Melly-Pons:} Target the unconstrained $\beta^{\text{unc}}$. Under misspecification, the resulting quantile curves $\hat{q}(x, \cdot)$ may violate monotonicity, producing invalid distributions.
+    
+    \item \textbf{Coefficient Projection:} Targets $\beta^* = \Pi_{\mathcal{C}}(\beta^{\text{unc}})$---the best constrained linear approximation. The output is always a valid probability measure.
+\end{enumerate}
+
+\begin{remark}[Comparison with Unconstrained Estimators]\label{rem:dominance}
+Theorem~\ref{thm:improvement} shows that applying coefficient projection to \emph{any} unconstrained estimator $\tilde{\beta}$ improves estimation of $\beta^*_n$. In particular, if one applies the projection $\Pi_{\mathcal{C}_n}$ to an alternative estimator $\hat{\beta}^{\text{alt}}$ (e.g., CLP) that also targets $\beta^{\text{unc}}$, the projected version $\Pi_{\mathcal{C}_n}(\hat{\beta}^{\text{alt}})$ satisfies:
+\[
+\|\Pi_{\mathcal{C}_n}(\hat{\beta}^{\text{alt}}) - \beta^*_n\|_{\Sigma} \leq \|\hat{\beta}^{\text{alt}} - \beta^*_n\|_{\Sigma}.
+\]
+That is, projection always helps, regardless of the base estimator. The key advantage of our approach is that we project in coefficient space (jointly enforcing monotonicity across $x$), rather than leaving the output potentially non-monotone.
+\end{remark}
+
+\textbf{Bottom line:} When the linear model is correctly specified, coefficient projection and CLP target the same $\beta$ and have similar asymptotic properties (though projection has better finite-sample MSE). When the linear model is misspecified, coefficient projection produces valid distributions by construction, while unconstrained methods may yield crossing quantile curves.
+
+\subsection{When Does Coefficient Projection Help?}
+
+\textbf{Note:} The entire motivation for quantile IV estimation is that treatment effects $\beta_1(u)$ vary across quantiles. If $\beta_1(u) = \beta_1$ were constant, standard 2SLS would suffice. All empirically relevant cases therefore involve heterogeneous $\beta(u)$.
+
+The coefficient projection estimator provides the greatest improvement over \emph{unconstrained 2SLS} when:
+
+\begin{enumerate}
+\item \textbf{Weak instruments:} With $\pi_Z = 0.1$, projection reduces MSE by approximately 22\%; with $\pi_Z = 0.2$, by 5--8\%; with $\pi_Z \geq 0.5$, by less than 1\%.
+\item \textbf{Small to moderate samples:} Gains of 5--10\% with $M = 25$ groups; diminishing to 1--2\% with $M = 100$.
+\item \textbf{Heterogeneous treatment effects:} Larger $|\beta_1'(u)|$ leads to more monotonicity violations in unconstrained estimates.
+\end{enumerate}
+
+The improvement of coefficient projection over \emph{pointwise FIVR} depends critically on the dimension of $X$:
+\begin{itemize}
+\item \textbf{Scalar $X$:} The two methods are essentially equivalent (difference $<0.5\%$).
+\item \textbf{Multivariate $X$ ($p \geq 2$):} Coefficient projection provides 1--2\% additional MSE reduction at $p=2$ and 2--3\% at $p=3$.
+\end{itemize}
+
+The intuition for the scalar equivalence is that PAVA adjustments at $X > \mu_X$ and $X < \mu_X$ have opposite signs and approximately cancel in the subsequent OLS regression, yielding coefficients close to the joint projection.
+
+\subsection{Characterization of When Violations Occur}
+
+A key practical question is: when do the unconstrained 2SLS estimates $\tilde{\beta}(u)$ produce endpoint quantile functions $\tilde{\gamma}_\pm(u)$ that violate monotonicity? Understanding this helps determine when the coefficient projection provides meaningful improvement.
+
+\begin{proposition}[Violation Conditions]\label{prop:violations}
+The unconstrained endpoint quantile function $\tilde{\gamma}_-(u) = \tilde{\beta}_0(u) + a_- \tilde{\beta}_1(u)$ violates monotonicity at some $u \in (0,1)$ if and only if:
+\begin{equation}
+\tilde{\beta}_0'(u) + a_- \tilde{\beta}_1'(u) < 0 \quad \text{for some } u.
+\end{equation}
+Since $a_- = \xbar - \mu_X < 0$, this is equivalent to:
+\begin{equation}
+\tilde{\beta}_0'(u) < |a_-| \cdot \tilde{\beta}_1'(u).
+\end{equation}
+Similarly, $\tilde{\gamma}_+(u)$ violates monotonicity if $\tilde{\beta}_0'(u) < -a_+ \cdot \tilde{\beta}_1'(u)$ for some $u$.
+\end{proposition}
+
+\begin{remark}[Intuition]
+Violations at the \emph{lower} endpoint ($\gamma_-$) occur when:
+\begin{itemize}
+\item $\beta_1(u)$ is increasing in $u$ (heterogeneous treatment effects across quantiles)
+\item $|a_-|$ is large (support extends far below the mean)
+\item $\beta_0(u)$ has relatively flat regions (less steep baseline quantile function)
+\end{itemize}
+The mechanism is that when $\beta_1'(u) > 0$, the quantile function at the lower endpoint has slope $\beta_0'(u) - |a_-| \beta_1'(u)$, which can become negative if $|a_-|$ or $\beta_1'(u)$ is large.
+\end{remark}
+
+\begin{proposition}[Factors Increasing Violation Frequency]\label{prop:violation_factors}
+In finite samples, monotonicity violations in $\tilde{\gamma}_\pm$ are more frequent when:
+\begin{enumerate}
+\item \textbf{Weak instruments:} Small $\pi_Z$ (first-stage coefficient) leads to high variance in $\tilde{\beta}_1(u)$, making estimated slopes $\tilde{\beta}_1'(u)$ more volatile.
+
+\item \textbf{Wide support:} Large $|a_-|$ or $a_+$ amplifies coefficient estimation error into larger violations. If $\text{Var}(\tilde{\beta}_1) = \sigma^2$, then $\text{Var}(\tilde{\gamma}_-) \approx a_-^2 \sigma^2$.
+
+\item \textbf{Heterogeneous treatment effects:} When the true $\beta_1(u)$ varies substantially with $u$, estimation noise can easily flip the sign of $\tilde{\gamma}_\pm'(u)$.
+
+\item \textbf{Small sample sizes:} Both small $M$ (number of groups) and small $N$ (within-group sample size) increase variance of the estimated quantile functions.
+
+\item \textbf{Heavy-tailed distributions:} Outliers inflate variance of empirical quantiles, especially at extreme $u$ values.
+\end{enumerate}
+\end{proposition}
+
+\begin{example}[Benchmark Simulation Results]
+We report results from Monte Carlo simulations with 500 replications using the following baseline DGP:
+\begin{itemize}
+\item \textbf{Heterogeneous effects:} $\beta_1(u) = 1 + 0.3 \cdot \Phi^{-1}(u)$, so $\beta_1$ ranges from approximately 0.6 to 1.4 across quantiles
+\item \textbf{Confounding:} $X = \pi_Z Z + 0.7 v + \varepsilon$, with $v$ affecting both $X$ and $Y$
+\item \textbf{Moderate samples:} $M = 30$ groups, $N = 25$ individuals per group
+\end{itemize}
+
+\textbf{Effect of IV strength} (holding other parameters fixed):
+\begin{center}
+\begin{tabular}{ccc}
+\hline
+$\pi_Z$ & MSE Reduction vs.\ 2SLS & CoefProj vs.\ PW-FIVR \\
+\hline
+0.10 (weak) & 22.5\% & $<0.5\%$ \\
+0.20 & 5.4\% & $<0.5\%$ \\
+0.30 & 5.1\% & $<0.5\%$ \\
+0.50 (strong) & 0.8\% & $<0.5\%$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Effect of dimension} (with $\pi_Z = 0.2$, high heterogeneity $\beta_{\text{slope}} = 0.5$):
+\begin{center}
+\begin{tabular}{ccc}
+\hline
+$p$ & MSE Reduction vs.\ 2SLS & CoefProj vs.\ PW-FIVR \\
+\hline
+1 & 4.2\% & 0.5\% \\
+2 & 2.0\% & 0.05\% \\
+3 & 8.4\% & 1.7\% \\
+\hline
+\end{tabular}
+\end{center}
+
+The results confirm that (i) projection methods provide substantial gains under weak IV, (ii) coefficient projection and pointwise FIVR are nearly equivalent for scalar $X$, and (iii) coefficient projection has a modest advantage in the multivariate case.
+\end{example}
+
+\begin{remark}[When Projection Has Little Impact]
+With strong instruments ($\pi_Z \geq 0.5$) and large samples ($M \geq 100$), the unconstrained 2SLS estimates already satisfy monotonicity with high probability. Projection reduces MSE by less than 1\%, though it still provides a theoretical guarantee of valid quantile functions. This is not a deficiency of the method---it simply reflects that the unconstrained estimates are already precise enough that monotonicity violations are rare.
+\end{remark}
+
+\subsection{Relationship to CLP/Melly-Pons}
+
+When individual covariates are not included:
+\begin{itemize}
+\item \textbf{CLP/Melly-Pons without $x_1$:} Estimates $\gamma(u)$ for the group-level treatment, but does not project to ensure monotonicity
+\item \textbf{Pointwise D-IV:} Projects at each $x$ separately, may over-smooth
+\item \textbf{Coefficient Projection D-IV:} Projects coefficients directly, preserves linear structure while ensuring validity
+\end{itemize}
+
+The coefficient projection approach estimates the same \emph{total effect} as D-IV (including composition and re-ranking effects) but with improved finite-sample properties when the linear model is correctly specified.
+
+\section{Extensions}
+
+\subsection{Multiple Regressors}
+
+For $X \in \R^p$ with convex support $\mathcal{X}$, the constraint set is:
+\[
+\mathcal{C} = \{b : b_0(u) + b_1(u)^\T(x - \mu_X) \text{ is non-decreasing for all } x \in \text{ext}(\mathcal{X})\},
+\]
+where $\text{ext}(\mathcal{X})$ denotes the extreme points of $\mathcal{X}$. For a polytope with $K$ vertices, this requires $K$ isotonic constraints.
+
+\subsection{Local Polynomial Extension}
+
+For nonparametric estimation with local polynomial weights, the coefficient projection can be applied locally:
+\[
+\hat{\beta}^*_{h,x_0}(u) = \argmin_{b \in \mathcal{C}} \sum_{j=1}^n K_h(X_j - x_0) \|q_b(X_j, u) - \hat{\psi}_{X_j}(u)\|^2.
+\]
+
+\subsection{Inference}
+
+Bootstrap inference remains valid under the endpoint strictness condition:
+\begin{enumerate}
+\item Draw bootstrap samples $\{(X_j^*, Z_j^*, Y_j^*)\}_{j=1}^n$
+\item Compute $\hat{\beta}^{*,b}$ via coefficient projection
+\item Construct confidence bands from the bootstrap distribution
+\end{enumerate}
+
+\section{Conclusion}
+
+The coefficient projection approach provides a principled framework for distribution-valued IV regression, unifying the Fréchet regression and IV literatures under a common structure:
+
+\begin{itemize}
+\item \textbf{Unified target:} The estimator targets $\beta^* = \Pi_{\mathcal{C}}(\beta^{\text{unc}})$---the best constrained linear IV approximation. Under correct specification, $\beta^* = \beta$ (the truth). Under misspecification, $\beta^*$ is the best linear model producing valid distributions.
+
+\item \textbf{Guaranteed improvement:} By the contraction property of Hilbert space projections, $\hat{\beta}^*$ is always at least as close to the sample-feasible target $\beta^*_n = \Pi_{\mathcal{C}_n}(\beta^{\text{unc}})$ as the unconstrained estimator $\tilde{\beta}$, with probability one. Under correct specification with $\mathcal{C} \subseteq \mathcal{C}_n$, this is improvement relative to the truth.
+
+\item \textbf{Fréchet interpretation:} The $\Sigma_{XX}$-weighted norm equals expected $W_2^2$ distance over the covariate distribution. Coefficient projection is constrained Fréchet IV regression---finding the Wasserstein barycenter path closest to the unconstrained solution, constrained to valid probability measures.
+
+\item \textbf{Efficient computation:} The infinite-dimensional constraint $b \in \mathcal{C}$ reduces to monotonicity at extreme points of the support---two isotonic constraints for scalar $X$, $2^p$ for $p$-dimensional $X$ with box support.
+\end{itemize}
+
+The key insight is that whether or not the linear model is correct, the coefficient projection estimator targets something sensible (best constrained linear fit) and improves in its estimation. Under correct specification, this means improved estimation of the truth. Under misspecification, it means improved estimation of the best we can do within the linear class while maintaining valid distributions.
+
+\textbf{Practical Recommendations:} Monte Carlo simulations with heterogeneous treatment effects $\beta(u)$ suggest the following guidance:
+\begin{enumerate}
+\item \textbf{Weak IV ($\pi_Z < 0.2$):} Projection methods reduce MSE by 10--25\% relative to unconstrained 2SLS. Use projection.
+\item \textbf{Moderate IV ($\pi_Z \in [0.2, 0.4]$):} Projection reduces MSE by 3--8\%. Use projection, especially with small samples.
+\item \textbf{Strong IV ($\pi_Z > 0.5$):} Projection provides $<1\%$ improvement. Either method is acceptable.
+\item \textbf{Scalar vs.\ multivariate $X$:} For scalar $X$, coefficient projection and pointwise FIVR yield essentially identical results. For $p \geq 2$, coefficient projection provides 1--3\% additional gains.
+\end{enumerate}
+
+\appendix
+
+\section{Proofs}
+
+\subsection{Proof of Theorem~\ref{thm:asymptotic} (Detailed)}
+
+We provide a complete proof using the theory of constrained estimation with asymptotically inactive constraints.
+
+\textbf{Step 1: Interior Point Characterization.}
+
+Under Assumption~\ref{ass:endpoint_strict}, $\beta^{\text{unc}}$ lies in the interior of $\mathcal{C}$. To see this, define (for the scalar $X$ case; the multivariate case uses vertices $v_k$):
+\[
+\delta := \inf_{c<d,\, [c,d] \subset [0,1]} \min\left\{ \frac{\psi_{\xbar}(d) - \psi_{\xbar}(c)}{d-c}, \frac{\psi_{\xbaru}(d) - \psi_{\xbaru}(c)}{d-c} \right\} \geq \kappa > 0.
+\]
+
+For any perturbation $\|b - \beta^{\text{unc}}\|_{L^\infty} < \varepsilon$, the perturbed vertex quantile functions satisfy:
+\begin{align}
+\gamma_\pm(b)(u') - \gamma_\pm(b)(u) &= \gamma_\pm(\beta^{\text{unc}})(u') - \gamma_\pm(\beta^{\text{unc}})(u) + \gamma_\pm(b-\beta^{\text{unc}})(u') - \gamma_\pm(b-\beta^{\text{unc}})(u).
+\end{align}
+Since $\gamma_\pm(b - \beta^{\text{unc}})(u) = (b_0 - \beta_0^{\text{unc}})(u) + a_\pm (b_1 - \beta_1^{\text{unc}})(u)$, we have:
+\begin{align}
+|\gamma_\pm(b-\beta^{\text{unc}})(u') - \gamma_\pm(b-\beta^{\text{unc}})(u)| &\leq 2\|b_0 - \beta_0^{\text{unc}}\|_{L^\infty} + 2|a_\pm| \cdot \|b_1 - \beta_1^{\text{unc}}\|_{L^\infty} \\
+&\leq 2(1 + |a_\pm|) \|b - \beta^{\text{unc}}\|_{L^\infty}.
+\end{align}
+Therefore:
+\[
+\gamma_\pm(b)(u') - \gamma_\pm(b)(u) \geq \kappa(u'-u) - 2(1 + |a_\pm|)\varepsilon > 0
+\]
+provided $\varepsilon < \kappa \cdot \min_{u'-u > 0}(u'-u) / (2(1 + |a_-| \vee |a_+|))$. On a grid with spacing $\Delta u$, this gives $\varepsilon < \kappa \Delta u / (2(1 + |a_-| \vee |a_+|))$.
+
+Hence $B_{L^\infty}(\beta^{\text{unc}}, \varepsilon) \subset \mathcal{C}$, confirming $\beta^{\text{unc}} \in \text{int}(\mathcal{C})$ and $\beta^* = \beta^{\text{unc}}$.
+
+\textbf{Step 2: Uniform Convergence.}
+
+The unconstrained estimator satisfies $\|\tilde{\beta} - \beta^{\text{unc}}\|_{L^\infty} = o_p(1)$. On a fixed grid of $G$ quantile levels, this follows from pointwise $\sqrt{n}$-consistency and the union bound: $\|\tilde{\beta} - \beta^{\text{unc}}\|_{L^\infty} = \max_{g=1,\dots,G} |\tilde{\beta}(u_g) - \beta^{\text{unc}}(u_g)| = O_p(n^{-1/2})$.
+
+\textbf{Step 3: Asymptotic Inactivity.}
+
+By Steps 1 and 2, $\Prob(\tilde{\beta} \in \mathcal{C}) \to 1$. On the event $\{\tilde{\beta} \in \mathcal{C}\}$, the projection is the identity: $\hat{\beta}^* = \Pi_{\mathcal{C}}(\tilde{\beta}) = \tilde{\beta}$.
+
+\textbf{Step 4: Functional Delta Method.}
+
+Since $\Pi_{\mathcal{C}}$ equals the identity on an $L^\infty$-neighborhood of $\beta^{\text{unc}}$, it is (fully) Hadamard differentiable at $\beta^{\text{unc}}$ tangentially to $C([0,1])^{p+1}$, with derivative equal to the identity map. By the functional delta method:
+\[
+\sqrt{n}(\hat{\beta}^* - \beta^{\text{unc}}) = \sqrt{n}(\Pi_{\mathcal{C}}(\tilde{\beta}) - \beta^{\text{unc}}) = \sqrt{n}(\tilde{\beta} - \beta^{\text{unc}}) + o_p(1) \leadsto \mathbb{G}_\beta.
+\]
+
+\section{Computational Details}
+
+\subsection{Weights for Coefficient Projection}
+
+Given $\Sigma_{XX} = \begin{pmatrix} 1 & 0 \\ 0 & \sigma_X^2 \end{pmatrix}$ (after centering), the transformation to $(\gamma_-, \gamma_+)$ coordinates yields:
+\begin{align}
+w_- &= \frac{a_+^2 + \sigma_X^2}{(a_+ - a_-)^2}, \\
+w_+ &= \frac{a_-^2 + \sigma_X^2}{(a_+ - a_-)^2}, \\
+w_\times &= \frac{-2(a_+ a_- + \sigma_X^2)}{(a_+ - a_-)^2}.
+\end{align}
+
+When $\mu_X = (\xbar + \xbaru)/2$ (symmetric support), we have $a_+ = -a_-$ and $w_\times = (a_+^2 - \sigma_X^2)/(2a_+^2)$. This is zero (yielding the diagonal case with independent PAVA problems) if and only if $\sigma_X^2 = a_+^2$---i.e., $\text{Var}(X) = (\xbaru - \mu_X)^2$. This holds for a two-point symmetric distribution (all mass at the endpoints $\xbar, \xbaru$), but not in general for symmetric support.
+
+\begin{thebibliography}{99}
+
+\bibitem{chetverikov2016iv} Chetverikov, D., Larsen, B., \& Palmer, C. (2016). IV quantile regression for group-level treatments, with an application to the distributional effects of trade. \textit{Econometrica}, 84(2), 809--833.
+
+\bibitem{melly2024minimum} Melly, B., \& Pons, M. (2025). Minimum distance estimation of quantile panel data models. Working paper.
+
+\bibitem{petersen2019frechet} Petersen, A., \& M{\"u}ller, H.-G. (2019). Fr{\'e}chet regression for random objects with Euclidean predictors. \textit{Annals of Statistics}, 47(2), 691--719.
+
+\bibitem{chen2022wasserstein} Chen, Y., \& M{\"u}ller, H.-G. (2022). Wasserstein regression. \textit{Journal of the American Statistical Association}, to appear.
+
+\bibitem{fang2018inference} Fang, Z., \& Santos, A. (2019). Inference on directionally differentiable functions. \textit{Review of Economic Studies}, 86(1), 377--412.
+
+\bibitem{lin2023distributional} Lin, Z., M{\"u}ller, H.-G., \& Park, B. U. (2023). Additive models for symmetric positive-definite matrices and Lie groups. \textit{Biometrika}, 110(2), 361--379.
+
+\end{thebibliography}
+
+\end{document}

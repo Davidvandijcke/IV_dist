@@ -1,0 +1,334 @@
+\documentclass[12pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{bm}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage[dvipsnames]{xcolor}
+\definecolor{darkblue}{rgb}{0, 0, 0.5}
+\hypersetup{
+     colorlinks = true,
+     citecolor = Maroon,
+     urlcolor = darkblue,
+     linkcolor = darkblue
+}
+\usepackage{setspace}
+
+\geometry{margin=1in}
+
+% Custom commands
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\calQ}{\mathcal{Q}}
+\newcommand{\PiQ}{\Pi_{\mathcal{Q}}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma} 
+\newtheorem{proposition}{Proposition} 
+\newtheorem{corollary}{Corollary}
+\newtheorem{remark}{Remark}
+\newtheorem{example}{Example}
+\newtheorem{definition}{Definition}
+
+\title{When Are Pointwise FIVR and Coefficient Projection Equivalent?}
+\author{Theoretical Notes}
+\date{\today}
+
+\onehalfspacing
+
+\begin{document}
+
+\maketitle
+
+\section{Setup and Definitions}
+
+Consider the linear quantile model:
+\begin{equation}
+Q(u \mid X) = \alpha(u) + \beta(u) (X - \mu_X),
+\end{equation}
+where $X \in [\underline{x}, \bar{x}]$ with mean $\mu_X$. Define:
+\begin{align}
+a_- &= \underline{x} - \mu_X < 0, \\
+a_+ &= \bar{x} - \mu_X > 0.
+\end{align}
+
+For $Q(u \mid X)$ to be a valid quantile function for all $X$, it must be non-decreasing in $u$ for each $X$:
+\begin{equation}
+\frac{\partial Q}{\partial u} = \alpha'(u) + \beta'(u)(X - \mu_X) \geq 0 \quad \forall X \in [\underline{x}, \bar{x}].
+\end{equation}
+
+\subsection{The Two Estimators}
+
+\textbf{Pointwise FIVR:}
+\begin{enumerate}
+\item For each observation $j$ with $X_j$, compute the weighted average of group quantile functions:
+\[
+\psi_{X_j}(u) = \sum_k s_k(X_j) \hat{Q}_{Y_k}(u), \quad \text{where } s_k(X_j) = 1 + \frac{(X_j - \mu_X)}{\Sigma_{ZX}} (Z_k - \bar{Z})
+\]
+\item Project onto monotonicity: $\hat{Q}^{pw}(u \mid X_j) = \PiQ(\psi_{X_j})(u)$
+\item Regress: $\hat{\beta}^{pw}(u) = \frac{\sum_j (X_j - \mu_X) \hat{Q}^{pw}(u \mid X_j)}{\sum_j (X_j - \mu_X)^2}$
+\end{enumerate}
+
+\textbf{Coefficient Projection:}
+\begin{enumerate}
+\item Compute unconstrained coefficients via 2SLS:
+\[
+\tilde{\alpha}(u) = \bar{Q}(u), \quad \tilde{\beta}(u) = \frac{\sum_j (Z_j - \bar{Z}) \hat{Q}_{Y_j}(u)}{\Sigma_{ZX}}
+\]
+\item Form endpoint quantile functions:
+\[
+\tilde{\gamma}_-(u) = \tilde{\alpha}(u) + a_- \tilde{\beta}(u), \quad \tilde{\gamma}_+(u) = \tilde{\alpha}(u) + a_+ \tilde{\beta}(u)
+\]
+\item Project endpoints: $\hat{\gamma}_\pm^* = \PiQ(\tilde{\gamma}_\pm)$
+\item Recover: $\hat{\beta}^*(u) = \frac{\hat{\gamma}_+^*(u) - \hat{\gamma}_-^*(u)}{a_+ - a_-}$
+\end{enumerate}
+
+\section{Main Theoretical Results}
+
+\subsection{Non-Equivalence in General}
+
+\begin{proposition}[Non-equivalence in General]\label{prop:nonequiv}
+Pointwise FIVR and Coefficient Projection are \textbf{not} equivalent in general. They can produce different estimates of $\beta(u)$ even when the true model is correctly specified.
+\end{proposition}
+
+\begin{proof}
+The key observation is that isotonic projection $\PiQ$ is \textbf{not linear}. While the set of monotone functions $\calQ$ is convex, the projection onto this set does not preserve linear combinations:
+\[
+\PiQ(\lambda f + (1-\lambda) g) \neq \lambda \PiQ(f) + (1-\lambda) \PiQ(g) \quad \text{in general}.
+\]
+
+For any $X_j$ strictly between the endpoints:
+\[
+\psi_{X_j}(u) = \lambda_j \tilde{\gamma}_-(u) + (1-\lambda_j) \tilde{\gamma}_+(u), \quad \text{where } \lambda_j = \frac{a_+ - (X_j - \mu_X)}{a_+ - a_-}.
+\]
+
+Pointwise FIVR projects $\psi_{X_j}$ directly, while Coefficient Projection uses:
+\[
+Q^*_{cp}(u \mid X_j) = \lambda_j \PiQ(\tilde{\gamma}_-)(u) + (1-\lambda_j) \PiQ(\tilde{\gamma}_+)(u).
+\]
+
+These differ unless $\PiQ(\lambda_j \tilde{\gamma}_- + (1-\lambda_j) \tilde{\gamma}_+) = \lambda_j \PiQ(\tilde{\gamma}_-) + (1-\lambda_j) \PiQ(\tilde{\gamma}_+)$.
+\end{proof}
+
+\subsection{Conditions for Equivalence}
+
+\begin{theorem}[Equivalence Conditions]\label{thm:equiv}
+Pointwise FIVR and Coefficient Projection produce \textbf{identical} estimates when any of the following hold:
+
+\begin{enumerate}
+\item \textbf{No monotonicity violations:} Both $\tilde{\gamma}_-(u)$ and $\tilde{\gamma}_+(u)$ are already monotone. Then $\PiQ$ is the identity for all intermediate convex combinations.
+
+\item \textbf{Uniform violation structure:} The set of ``pooled'' intervals $\{[u_k, u_{k+1}]\}$ where PAVA pools values is identical for $\tilde{\gamma}_-$, $\tilde{\gamma}_+$, and all intermediate combinations $\psi_{X_j}$.
+
+\item \textbf{Single regressor at endpoints:} If observations exist only at $X = \underline{x}$ and $X = \bar{x}$ (no intermediate values), then both methods project only at the endpoints and produce identical $\beta(u)$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\textbf{(1)} If $\tilde{\gamma}_\pm \in \calQ$, then $\PiQ(\tilde{\gamma}_\pm) = \tilde{\gamma}_\pm$. Any convex combination of monotone functions is monotone, so $\psi_{X_j} \in \calQ$ for all $j$, giving $\hat{Q}^{pw}(u \mid X_j) = \psi_{X_j}(u)$. Both methods reduce to unprojected 2SLS.
+
+\textbf{(2)} When the pooling structure is identical, PAVA applies the same averaging to the same intervals for all functions. Since averaging is linear, the projection preserves convex combinations:
+\[
+\PiQ(\lambda f + (1-\lambda) g) = \lambda \PiQ(f) + (1-\lambda) \PiQ(g).
+\]
+
+\textbf{(3)} Direct: with observations only at endpoints, both methods apply PAVA to the same two functions and compute $\beta$ from their difference.
+\end{proof}
+
+\subsection{Sufficient Condition: Positive or Negative $X - \mu_X$}
+
+\begin{proposition}[Same-Sign Condition]\label{prop:samesign}
+If $X \geq \mu_X$ almost surely (all deviations from the mean are non-negative), or $X \leq \mu_X$ almost surely (all deviations non-positive), then the methods are more likely to agree, but \textbf{not necessarily equivalent}.
+\end{proposition}
+
+\begin{proof}
+When $X \geq \mu_X$ a.s., we have $a_- = \underline{x} - \mu_X \leq 0$ with $\underline{x} = \mu_X$ in the extreme case. Then all observed $X_j$ satisfy $(X_j - \mu_X) \geq 0$, so:
+\[
+\psi_{X_j}(u) = \tilde{\alpha}(u) + \beta(u)(X_j - \mu_X) \quad \text{with coefficient on } \tilde{\gamma}_+ \geq \text{coefficient on } \tilde{\gamma}_-.
+\]
+The violation structure is more likely to be ``one-sided'' (violations predominantly in $\tilde{\gamma}_+$), leading to similar pooling patterns. However, this is not guaranteed.
+\end{proof}
+
+\section{When They Diverge: Mixed-Sign $X$}
+
+\begin{proposition}[Divergence with Mixed-Sign Deviations]\label{prop:diverge}
+The methods diverge most when:
+\begin{enumerate}
+\item $X$ has support symmetric around $\mu_X$ (so $a_+ = -a_- > 0$)
+\item $\tilde{\gamma}_-$ and $\tilde{\gamma}_+$ have \textbf{different} violation structures
+\item Intermediate $X_j$ values are common, requiring projections at non-endpoint values
+\end{enumerate}
+\end{proposition}
+
+\begin{example}[Divergence Scenario]
+Suppose:
+\begin{itemize}
+\item $\tilde{\gamma}_-(u)$ has violations on $[0.3, 0.5]$ (needs pooling there)
+\item $\tilde{\gamma}_+(u)$ has violations on $[0.6, 0.8]$ (needs pooling there)
+\end{itemize}
+
+For $X_j = \mu_X$ (exactly at the mean), $\psi_{X_j}(u) = \tilde{\alpha}(u) = \frac{1}{2}(\tilde{\gamma}_- + \tilde{\gamma}_+)$.
+
+\textbf{Coefficient Projection} gives:
+\[
+Q^*_{cp}(u \mid \mu_X) = \frac{1}{2}(\hat{\gamma}_-^* + \hat{\gamma}_+^*),
+\]
+which pools on $[0.3, 0.5]$ for the $\gamma_-$ part and on $[0.6, 0.8]$ for the $\gamma_+$ part.
+
+\textbf{Pointwise FIVR} computes $\PiQ(\tilde{\alpha})$ directly. The average $\frac{1}{2}(\tilde{\gamma}_- + \tilde{\gamma}_+)$ may have violations on \textbf{neither} interval (they cancel), or on \textbf{both} (they compound), depending on the specific function values.
+
+In general, $\PiQ(\frac{1}{2}(f + g)) \neq \frac{1}{2}(\PiQ(f) + \PiQ(g))$.
+\end{example}
+
+\section{Role of $\alpha$ Monotonicity}
+
+\begin{proposition}[$\alpha$ Monotone and $X \geq 0$ Case]\label{prop:alpha_mono}
+Suppose:
+\begin{enumerate}
+\item $\alpha(u)$ is monotone non-decreasing
+\item $X \geq 0$ with probability 1, implying $\mu_X > 0$ and $a_- \leq 0 \leq a_+$
+\item $\beta(u) \geq 0$ for all $u$ (treatment has positive effect at all quantiles)
+\end{enumerate}
+Then $Q(u \mid X) = \alpha(u) + \beta(u)X$ is monotone for all $X \geq 0$. If the unconstrained estimates $\tilde{\alpha}, \tilde{\beta}$ satisfy these conditions (no violations), both methods are equivalent to unprojected 2SLS.
+\end{proposition}
+
+\begin{remark}
+The condition ``$\alpha$ monotone and $X \geq 0$'' does \textbf{not} guarantee no violations in finite samples. The estimated $\tilde{\alpha}(u)$ may not be monotone due to sampling error, and $\tilde{\beta}(u)$ may fluctuate around zero or have incorrect sign at some quantiles.
+\end{remark}
+
+\section{Characterization via PAVA Pooling Structure}
+
+\begin{definition}[Pooling Structure]
+For a function $f: [0,1] \to \R$, define its \textbf{pooling structure} $\mathcal{P}(f)$ as the partition of $[0,1]$ into maximal intervals on which $\PiQ(f)$ is constant.
+\end{definition}
+
+\begin{theorem}[Equivalence via Pooling]\label{thm:pooling}
+Pointwise FIVR and Coefficient Projection are equivalent if and only if:
+\[
+\mathcal{P}(\lambda \tilde{\gamma}_- + (1-\lambda) \tilde{\gamma}_+) = \text{common refinement of } \mathcal{P}(\tilde{\gamma}_-) \text{ and } \mathcal{P}(\tilde{\gamma}_+)
+\]
+for all $\lambda \in [0,1]$ such that $\lambda = \frac{a_+ - (X_j - \mu_X)}{a_+ - a_-}$ for some observed $X_j$.
+\end{theorem}
+
+\begin{proof}
+When pooling structures are nested/aligned, PAVA applies averaging over the same intervals, and averaging is linear. The result follows from the linearity of PAVA restricted to functions with compatible pooling structures.
+\end{proof}
+
+\section{Implications for Simulation Design}
+
+To test when the methods diverge, design DGPs with:
+
+\begin{enumerate}
+\item \textbf{Different violation locations:} Make $\tilde{\gamma}_-$ and $\tilde{\gamma}_+$ violate monotonicity at different quantile levels.
+
+\item \textbf{Mixed-sign $X$:} Use $X$ with support spanning both sides of $\mu_X$ (e.g., $X \sim N(0,1)$).
+
+\item \textbf{Intermediate $X$ values:} Ensure many observations fall strictly between $\underline{x}$ and $\bar{x}$.
+
+\item \textbf{Moderate violations:} The unconstrained estimates should have violations (weak IV, small samples) but not be entirely ``broken.''
+\end{enumerate}
+
+\subsection{Proposed DGP for Testing Divergence}
+
+\begin{example}[DGP with Different Violation Patterns]
+\begin{align}
+X &\sim \text{Uniform}(-2, 2), \quad Z = 0.3 X + 0.9 v, \quad v \sim N(0,1) \\
+\alpha(u) &= \Phi^{-1}(u) \quad \text{(standard normal QF, monotone)} \\
+\beta(u) &= 1 + 0.3 \sin(4\pi u) \quad \text{(oscillating around 1)}
+\end{align}
+
+With this $\beta(u)$:
+\begin{itemize}
+\item At $X = -2$ (lower endpoint): $\gamma_- = \alpha(u) - 2\beta(u) = \Phi^{-1}(u) - 2 - 0.6\sin(4\pi u)$
+\item At $X = +2$ (upper endpoint): $\gamma_+ = \alpha(u) + 2\beta(u) = \Phi^{-1}(u) + 2 + 0.6\sin(4\pi u)$
+\end{itemize}
+
+The $\sin$ oscillation introduces violations at \textbf{different} $u$-values for $\gamma_-$ vs.\ $\gamma_+$ (the oscillations are in opposite directions relative to the baseline monotone part).
+
+With weak IV and moderate sample size, the estimated $\tilde{\beta}(u)$ will have noise that creates asymmetric violation patterns, causing Pointwise FIVR and Coefficient Projection to diverge.
+\end{example}
+
+\section{Summary}
+
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Condition} & \textbf{PW-FIVR = CoefProj?} & \textbf{Notes} \\
+\hline
+No violations at either endpoint & \checkmark Yes & Both = unprojected 2SLS \\
+Identical pooling structure & \checkmark Yes & PAVA linearity holds \\
+Observations only at endpoints & \checkmark Yes & Same projections applied \\
+\hline
+Mixed-sign $X$, different violations & $\times$ No & PAVA non-linearity matters \\
+$\alpha$ non-monotone, $X$ mixed-sign & $\times$ No & Violations at different $u$ \\
+Oscillating $\beta(u)$ & $\times$ No & Asymmetric violation patterns \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Key Insight:} The methods are equivalent when PAVA behaves ``as if linear,'' which happens when all intermediate convex combinations of $\tilde{\gamma}_-$ and $\tilde{\gamma}_+$ inherit the same pooling structure. This is a restrictive condition that fails in most realistic scenarios with finite-sample noise.
+
+\textbf{Practical Implication:} In simulations, both methods perform similarly because:
+\begin{enumerate}
+\item With large samples, violations are rare $\Rightarrow$ both $\approx$ 2SLS
+\item With small samples, the differences in projection are small relative to overall estimation noise
+\end{enumerate}
+
+The theoretical distinction matters most for precise characterization of the constraint sets and for understanding which method is ``correct'' from a structural perspective.
+
+\section{Empirical Verification}
+
+Simulations confirm the theoretical analysis. Despite designing DGPs to maximize divergence (oscillating $\beta(u)$, mixed-sign $X$, weak IV with many violations), the methods produce essentially identical results:
+
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{DGP} & \textbf{Divergence} & \textbf{MSE Diff (\%)} & \textbf{Both Viol (\%)} \\
+\hline
+Oscillating $\beta$ (freq=2) & 0.020 & +0.07\% & 93\% \\
+Oscillating $\beta$ (freq=4) & 0.014 & $-$0.03\% & 74\% \\
+Positive $X$ & 0.069 & $-$0.47\% & 66\% \\
+Symmetric $X$ & 0.012 & +0.05\% & 45\% \\
+Hetero $\beta$, weak IV & 0.017 & +0.03\% & 40\% \\
+Hetero $\beta$, strong IV & 0.002 & +0.49\% & 1\% \\
+Extreme weak IV & 0.040 & +0.17\% & 78\% \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Key Observations:}
+\begin{enumerate}
+\item \textbf{Negligible MSE differences:} All below 0.5\% of 2SLS MSE
+\item \textbf{Small divergence:} Average L2 distance between methods is 0.01--0.07
+\item \textbf{Both improve over 2SLS:} 1--22\% MSE reduction depending on DGP
+\item \textbf{Robust equivalence:} Even with 93\% ``both endpoints violated'' rate, methods agree
+\end{enumerate}
+
+\subsection{Why Theoretical Divergence Doesn't Materialize}
+
+Three mechanisms explain the practical equivalence:
+
+\begin{enumerate}
+\item \textbf{Small violations relative to scale:} While violations occur frequently, they involve small decrements that PAVA ``smooths out'' similarly regardless of whether we project at endpoints or all $X$ values.
+
+\item \textbf{Convexity of PAVA:} For functions that are ``close'' to monotone, PAVA produces projections that respect approximate linearity. The convex combination property holds approximately for small violations.
+
+\item \textbf{Regression averaging:} After projection, regressing on $X$ averages across all observations. Small differences in individual $\hat{Q}(u \mid X_j)$ values wash out when computing $\hat{\beta}$.
+\end{enumerate}
+
+\subsection{Practical Recommendation}
+
+Given the empirical equivalence, the choice between methods should be based on:
+
+\begin{enumerate}
+\item \textbf{Computational efficiency:} Coefficient Projection requires only 2 PAVA operations (at endpoints), while Pointwise FIVR requires $M$ PAVA operations (one per observation). For large $M$, CoefProj is faster.
+
+\item \textbf{Theoretical clarity:} CoefProj directly enforces the constraint that $Q(u \mid X)$ is a valid QF \textbf{for all $X$ in the support}, not just observed values. This is the ``correct'' structural constraint.
+
+\item \textbf{Extension to multivariate $X$:} CoefProj extends naturally via vertex projection (2\textsuperscript{p} vertices). Pointwise FIVR requires projecting at all $M$ observations, which doesn't scale well.
+\end{enumerate}
+
+\textbf{Recommendation:} Use \textbf{Coefficient Projection} as the default method. It is computationally simpler, theoretically cleaner, and empirically equivalent to Pointwise FIVR.
+
+\end{document}

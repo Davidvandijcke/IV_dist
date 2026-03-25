@@ -1,0 +1,1730 @@
+\documentclass[12pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{bm}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage[dvipsnames]{xcolor}
+\definecolor{darkblue}{rgb}{0, 0, 0.5}
+\hypersetup{
+     colorlinks = true,
+     citecolor = Maroon,
+     urlcolor = darkblue,
+     linkcolor = darkblue
+}
+\usepackage{setspace}
+\usepackage{enumerate}
+
+
+\usepackage[round]{natbib} 
+\usepackage{comment}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\newcommand{\nddvd}[1]{{\color{blue}[David: #1]}}
+\newcommand{\kw}[1]{\textcolor{cyan}{Kaspar: #1}}
+
+\geometry{margin=1in}
+
+% Custom commands
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Tr}{\mathrm{Tr}}
+\newcommand{\T}{\mathsf{T}} % 
+
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\usepackage{xspace}
+\newcommand{\est}{\ensuremath{\textnormal{D-IV}}\xspace}
+\newcommand{\CLP}{CLP\xspace}
+\newcommand{\MP}{MP\xspace}
+
+\newcommand{\Prob}{\mathbb{P}} % Probability
+\newcommand{\R}{\mathbb{R}} % Real numbers
+\newcommand{\calP}{\mathcal{Y}} % Space of CDFs
+\newcommand{\calQ}{Q(\mathcal{Y})} % Space of QFs
+\newcommand{\dd}{\mathrm{d}} % Differential d
+\newcommand{\indep}{\perp \!\!\! \perp} % Independence symbol
+\newcommand{\PiQ}{\Pi_{\mathcal{Q}}} % Projection operator notation
+\newcommand{\toP}{ \overset{p}{\to}}
+\newcommand{\xbar}{\underline{x}}
+\newcommand{\xbaru}{\bar{x}}
+
+\newtheorem{theorem}{Theorem}
+	\newtheorem{lemma}{Lemma} 
+	\newtheorem{proposition}{Proposition} 
+	\newtheorem{definition}{Definition}
+	\newtheorem{condition}{Suf\mbox{}ficient condition}
+	\newtheorem{claim}{Claim}
+ 	%\newtheorem{algorithm}{Algorithm}
+    \newtheorem{corollary}{Corollary}
+	\newtheorem{assumption}{Assumption}
+	\newtheorem{example}{Example}
+	\newtheorem{remark}{Remark}
+	\newtheorem*{example*}{Example}
+
+\title{IV regression with distribution-valued outcomes\thanks{We are grateful to Tim Christensen and Xiaohong Chen for feedback. Kaspar W\"uthrich is also affiliated with CESifo. Van Dijcke gratefully acknowledges support from the Lawrence Klein Econometrics Fellowship and the Rackham Predoctoral Fellowship at the University of Michigan. This research was supported in part through computational resources and services provided by Advanced Research Computing at the University of Michigan, Ann Arbor. The usual disclaimer applies.}}
+\author{David Van Dijcke\thanks{Department of Economics, University of Michigan. Email: \url{dvdijcke@umich.edu}}\quad \quad Kaspar W\"uthrich\thanks{Department of Economics, University of Michigan. Email: \url{kasparwu@umich.edu}}} % Placeholder
+\date{\today}
+
+\onehalfspacing
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We propose distribution-valued instrumental variable regression (\est), an instrumental variables method for settings where the outcome variable is an entire distribution. Distribution-valued outcomes arise in many applications. A leading example is when researchers are interested in estimating the effect of a group-level treatment on the entire outcome distribution within the group. The \est estimator solves the Fr\'echet IV regression problem at each observed covariate value---finding the closest valid probability distribution to the IV-weighted average in 2-Wasserstein distance---and recovers coefficient functions by OLS. This projection step reduces estimation error in finite samples and ensures that the estimated conditional distributions are valid probability measures. We show that the \est estimator converges weakly to a zero-mean Gaussian process and establish the validity of the bootstrap for uniform inference.
+
+\medskip
+\noindent \textbf{Keywords:} instrumental variables, distributional outcomes, Fr\'echet regression, Wasserstein distance, quantile functions, monotone projection
+
+\medskip
+\noindent \textbf{JEL Codes:} C14, C21, C26, C36
+
+
+\end{abstract}
+
+\newpage
+
+
+\section{Introduction} 
+
+The goal and main contribution of this paper is to develop an instrumental variables (IV) framework for settings where the outcome of interest is a distribution. A leading example is when researchers are interested in the effect of a treatment that varies at the group level on the distribution of an outcome within groups. Analyzing effects on the entire distribution of an outcome within groups, instead of simple group-level averages, provides a more comprehensive understanding of treatment effects and allows for studying important distributional issues, such as inequality or tail risk. For instance, building on \citet{autor2013china}, \citet{chetverikov2016iv} (\CLP henceforth) estimated the effect of import competition on the distribution of local wages and found that low-wage earners were most affected by increased import competition. In this application, the treatment (import competition) varies at the group (commuting zone) level and the outcome is the distribution within groups (the wage distribution within commuting zones).  Other examples include policies implemented at the firm, hospital, or school level which affect the entire distribution of employee, patient, or student outcomes (see also \citet{van2025regression}). A major empirical challenge arises when these group-level treatments are endogenous, which motivates the use of IVs for estimating causal effects. 
+
+We propose a flexible IV regression framework allowing researchers to estimate the effect of real-valued treatments on distribution-valued outcomes, using real-valued instruments. We refer to the proposed procedures as distribution-valued IV regression (\est). While we will use the grouped data terminology our results, \est is very general and can be applied to panel data as well as any other setting where the outcomes of interest are distribution-valued. 
+
+We consider a linear structural model for the (known or estimated) quantile function corresponding to the distribution-valued outcome of interest, referred to as structural quantile function. We show that the structural quantile function is identified as the solution to a Fr\'echet IV regression problem in the Wasserstein space. This identification result suggests a computationally straightforward estimation strategy: (i) construct plug-in estimates of the IV weights, (ii) compute IV-weighted average quantile curves at each observed covariate value, (iii) project each curve onto the space of valid quantile functions---solving the sample Fr\'echet IV problem---and (iv) recover coefficient functions by OLS. We show that the resulting estimator converges weakly to a zero-mean Gaussian process and propose uniform inference procedures based on the bootstrap.
+
+The projection step is important for several reasons. First, it ensures that each estimated conditional distribution is a valid probability measure, and that the estimator has the interpretation of an IV-weighted Wasserstein barycenter. Second, it always weakly decreases the estimation error at each evaluation point, in all $L^p$ norms---a classical property of isotonic projections. Third, it connects our approach to the Fr\'echet regression framework of \citet{petersen2019frechet}, extending it to the IV setting. Under a strict monotonicity condition on the population IV-weighted quantile functions, the \est estimator is asymptotically equivalent to the unconstrained 2SLS estimator, so standard inference remains valid.
+
+We evaluate the finite-sample performance of the proposed estimators in Monte Carlo simulations. The projection reduces MSE by 5--22\% under weak to moderate instruments, with the gain diminishing to below 1\% for strong instruments.
+
+
+\subsection{Literature}
+
+We contribute to several strands of the literature. Our first contribution is to the literature developing models for estimating distributional effects with panel and grouped data \citep[e.g.,][]{koenker2004quantile,canay2011simple,galvao2015efficient,galvao2016smoothed,chetverikov2016iv,galvao2020unbiased,chernozhukov2024network,pons2024quantile,melly2025minimum}. Within this literature, our work is most closely related to \citet{chetverikov2016iv} (\CLP henceforth) and \citet{melly2025minimum} (\MP henceforth). See Section \ref{sec:relationship_existing_literature} for a formal discussion of the relationship of our model and theirs and Section \ref{sec:simulation} for a simulation comparison. \kw{the following needs to be improved/extended; also mention that the remaining object has an interpretation here. in other words, once you see the connection, it becomes clear how this should be done. we will also need to mention that these two papers allow for individual covariates, which we do not.} We contribute to this strand of the literature by demonstrating that when focusing on the effect of group-level variables, regression models that are specifically designed for distribution-valued outcomes provide a natural and coherent framework for estimating treatment effects. Working with regression models for distribution-valued outcomes has several important advantages. First, ... Finally, it allows us to develop fully non-parametric estimators, building on standard non-parametric IV identification arguments.
+
+Our second contribution is to the literature on Fr\'echet regression \citep{petersen2019frechet} and to the recent literature extending  Fr\'echet regression and related methods to causal inference settings \citep[e.g.,][]{van2025regression, kurisu2025geodesic, kurisu2025geodesic, zhou2025geodesic, katta2024interpretable}. We contribute to this literature by...
+
+
+Finally, we contribute to the literature on quantile models with endogeneity more broadly \citep[e.g.,][among many others]{abadie2002instrumental,chernozhukov2005iv,chernozhukov2006instrumental,chernozhukov2008instrumental,lee2007endogeneity,lee2007nonparametric,melly2013unconditional,kaplan2017smoothed,vuong2017counterfactual,decastro2019smoothed,wuthrich2019closed,wuthrich2020comparison,kaido2021decentralization,beyhum2023instrumental}. The goal of this literature is to estimate the effects on the quantiles of real-valued scalar outcomes, whereas we consider the functional IV regression case in which the outcomes themselves are distribution-valued.
+
+
+
+
+\subsection{Notation}
+We use the following notation throughout. For a vector $v \in \R^p$, $\|v\| = (v^{\!\T} v)^{1/2}$ denotes the Euclidean norm. For a positive semi-definite matrix $A$, $\|v\|_A = (v^{\!\T} A v)^{1/2}$ is the $A$-weighted norm. For functions $f \in L^2([0,1])$, $\|f\|_{L^2} = (\int_0^1 f(u)^2\, du)^{1/2}$ is the standard $L^2$ norm. The 2-Wasserstein distance between two distributions with quantile functions $Q_1, Q_2$ is $W_2(\mu,\nu) = \|Q_1 - Q_2\|_{L^2}$. We write $\leadsto$ for weak convergence in the sense of \citet{vaart1996weak}, $\overset{p}{\to}$ for convergence in probability, and $\ell^\infty(T)$ for the space of bounded functions on $T$ equipped with the supremum norm. For a closed convex set $K$ in a Hilbert space, $\Pi_K$ denotes the metric projection onto $K$.
+
+
+
+\section{Setup and model}
+
+Consider a setting with $n$ groups indexed by $j=1, \dots, n$. We are interested in estimating the effect of group-level variables $X_j \in \R^p$ with support $\mathcal{X} \subseteq \R^p$ on a distribution-valued outcome $Y_j\in \mathcal{Y}$, where $\calP$ is the space of one-dimensional cumulative distribution functions (CDF). Let $Q_{Y_j} \in \calQ$ denote the quantile function corresponding to the CDF $Y_j$, where $\calQ$ is the space of quantile functions corresponding to $\calP$. Note that for a fixed quantile level $u\in (0,1)$, $Q_{Y_j}(u)$ is a real-valued random variable. We also have access to a vector of group-level IVs, which includes an intercept, $Z_j \in \R^{l+1}$, with $l\ge p$. We assume throughout that $\{(X_j,Y_j,Z_j)\}_{j=1}^n$ are i.i.d. We fix $0 < a < b < 1$ and state all asymptotic results for quantile levels $u \in [a,b]$, avoiding tail quantiles.
+
+We consider a linear model for $Q_{Y_j}$, noting that our asymptotic results will allow for misspecification,
+\begin{equation}\label{eq:linear_model}
+  Q_{Y_j}(u) = \beta_0(u) + \beta_1(u)^{\!\T}(X_j-\mu_X) + \eta_j(u), \quad E[\eta_j(u)]=0, \quad u\in (0,1),
+\end{equation}
+where $\mu_X:=E[X_j]$, $\beta_0(u)$ is a scalar intercept function, $\beta_1(u)$ is a $p$-dimensional vector of slope functions, and $\eta_j(u)$ is an unobserved error term. Given that we include an intercept, the assumption that $E[\eta_j(u)]=0$ is a normalization. In what follows, we will often refer to $q(x,u):=\beta_0(u) + \beta_1(u)^{\!\T}(x-\mu_X)$ as the structural quantile function.
+
+Writing the model in terms of demeaned variables $\tilde{X}_j=X_j-\mu_X$ will be convenient for our theoretical analysis. Note that due to the linearity, we can always reparametrize the model and write it in terms of $X_j$ as
+\begin{equation*}
+  Q_{Y_j}(u) = \tilde\beta_0(u) + \beta_1(u)^{\!\T}X_j + \eta_j(u),
+\end{equation*}
+where $\tilde\beta_0(u)=\beta_0(u)-\beta_1(u)^{\!\T}\mu_X$.
+
+\section{Distribution-Valued IV regression}
+
+In this section, we discuss identification and estimation in the \est model.
+
+\subsection{Population problem and identification}
+\label{sec:population_fivr_problem_identification}
+We obtain identification of the structural quantile function $q(x,u)$ using the vector of IVs, $Z_j$. To do so, we impose the following standard assumptions. Let $\tilde{Z}_j:=Z_j-E[Z_j]$.
+\begin{assumption}[Instrument exogeneity]\label{ass:instrument_exogeneity} $E\left[\tilde{Z}_j\eta_j(u)\right]=0$
+\end{assumption}
+Define the population matrices $\Sigma_{ZZ} := E[\tilde Z_j\tilde Z_j^{\T}]$, $\Sigma_{ZX} := E[\tilde Z_j \tilde{X}_j^{\T}]$, and $\Sigma_{XX} := E[\tilde{X}_j \tilde{X}_j^{\!\T}]$.
+\begin{assumption}[Full rank] \label{ass:full_rank}
+$\Sigma_{ZZ}$ is positive definite and $\Sigma_{ZX}$ has full column rank $p$.
+\end{assumption}
+
+To motivate \est, consider first the case where $X_j$ is exogenous, $E[\tilde{X}_j\eta_j(u)]=0$. In this case, we can use conventional global Fr\'echet regression \citep{petersen2019frechet} to obtain the structural quantile function $q(x,u)$. \citeauthor{petersen2019frechet} motivate global Fr\'echet regression as a generalization of standard linear regression. Specifically, suppose that $Y_j\in \mathbb{R}$ and the conditional expectation function is linear, $m(x):=E\left[Y_j\mid X_j=x\right]=\alpha_0+\alpha_1^{\!\T}(x-\mu_X)$. Then, the formal characterization of the conditional expectation is $m(x)=\argmin_{m\in \mathbb{R}}E\left[s(X_j,x)d_E^2(Y_j,m)\right]$, where $d_E(\cdot)$ is the standard Euclidian norm and $s(z,x)=1+(z-\mu_X)^{\!\T} \Sigma_{XX}^{-1}(x-\mu_X)$ with $\Sigma_{XX}=E\left[\tilde{X}\tilde{X}^{\!\T}\right]$. The idea of global Fr\'echet regression is to replace the Euclidian norm with a more general norm suitable for outcomes taking values in general metric spaces.
+
+Here, we extend Fr\'echet regression to settings where $X_j$ is endogenous and the outcomes are distribution-valued. To motivate our approach, suppose first that $Y_j\in \mathbb{R}$ satisfies the linear IV model $Y_j=\alpha_0 + \alpha_1^{\!\T}(X_j-\mu_X) + \eta_j$ with $E[\eta_j(u)]=0$. A key observation underlying \est is that the linear model $m(X_j):=\alpha_0 + \alpha_1^{\!\T}(X_j-\mu_X)$ can be obtained by rewriting the canonical two-stage least-squares (2SLS) estimator as
+$$
+m(x)=\argmin_{m \in \mathbb{R}} E\left[s(Z_j,x)d_E^2(Y_j,m) \right],
+$$
+where
+\begin{equation}\label{eq:s-weight-fivr_intercept_main}
+   s(Z_j, x) := 1 + (x-\mu_X)^{\!\T} (\Sigma_{ZX}^{\!\T}\Sigma_{ZZ}^{-1}\Sigma_{ZX})^{-1} \Sigma_{ZX}^{\!\T}\Sigma_{ZZ}^{-1} \tilde Z_j.
+\end{equation}
+See the proof of Lemma~\ref{lem:identification_FIVR} in the appendix for a derivation.
+
+Replacing the Euclidean norm with the 2-Wasserstein distance suitable for distribution-valued outcomes, this observation leads to the following instrumental-variables version of Fr\'echet regression,
+\begin{equation}\label{eq:frechet-objective-fivr_intercept_pop}
+  m^{\est}(x) = \argmin_{m\in\calP} E\left[s(Z_j,x)\,W_2^{2}(Y_j,m)\right],
+\end{equation}
+where, by construction, for each given $x$, $m^{\est}(x)$ is a distribution function, $m^{\est}(x)\in \calP$.
+
+It follows from Proposition \ref{prop:frechet_equiv} in the Appendix that the quantile function associated with $m^{\est}(x)$, denoted $Q_{m^{\est}(x)}$, is the $L^2$-projection of the IV-weighted quantile function, $\psi_x(u) \coloneqq E[s(Z_j,x)Q_{Y_j}(u)]$, onto the space of quantile functions $\calQ$:
+\begin{equation}\label{eq:projection-fivr_intercept_main}
+   Q_{m^{\est}(x)}(u) := \Pi_{\mathcal{Q}}\left(E[s(Z_j,x)Q_{Y_j}(u)]\right).
+\end{equation}
+By the linearity of $s(Z_j,x)$ in $x$, the function $\psi_x(u)$ is affine in $x$ 
+and can be written as $\psi_x(u) = \beta_0^{\text{unc}}(u) + 
+\beta_1^{\text{unc}}(u)^{\!\T}(x - \mu_X)$, where $\beta^{\text{unc}}(u)$ are the 
+standard 2SLS coefficients applied quantile by quantile. In population, the projection $\Pi_{\mathcal{Q}}$ is inactive and hence $Q_{m^{\est}(x)}(u)$ coincides with the solution to the linear 2SLS regression quantile by quantile, i.e., $E[s(Z_j,x)Q_{Y_j}(u)]$. Moreover, the functional object $m^{\est}(x)$ has the interpretation of being the IV-weighted Wasserstein barycenter of the group-level quantile functions $Q_{Y_j}$. Put simply, this means that for a given $x$, $m^{\est}(x)$ is the IV-weighted average of each group's distribution in probability space---which implies it can rightfully be called the ``average'' instrumented distribution. For more discussion on (conditional) Wasserstein barycenters, we refer to \citet{agueh2011barycenters, fan2024conditional, panaretos2020invitation}.
+
+The IV-Fr\'echet coefficients are then equal to,
+\begin{align}
+& \beta^\est_0(u) = E[Q_{m^\est(X)}(u)] \\
+& \beta^\est_1(u) = \Sigma_{XX}^{-1} E[ \tilde{X}_j Q_{m^\est(X)}(u)],
+\end{align}
+the OLS coefficients corresponding to the projected quantile function $Q_{m^\est}(x)(u)$. 
+
+\begin{comment}
+Define the population unconstrained IV coefficients, which are the standard 2SLS coefficient functions applied quantile by quantile,
+\begin{align}
+\beta_0^{\text{unc}}(u) &= \E[Q_{Y_j}(u)], \label{eq:beta0_unc} \\
+\beta_1^{\text{unc}}(u) &= (\Sigma_{ZX}^{\!\T}\Sigma_{ZZ}^{-1}\Sigma_{ZX})^{-1} \Sigma_{ZX}^{\!\T}\Sigma_{ZZ}^{-1} \E[\tilde{Z}_j Q_{Y_j}(u)], \label{eq:beta1_unc}
+\end{align}
+and the corresponding IV-weighted quantile function at evaluation point $x$,
+\begin{equation}\label{eq:psi_x_pop}
+\psi_x(u) := \E[s(Z_j, x) Q_{Y_j}(u)] = \beta_0^{\text{unc}}(u) + \beta_1^{\text{unc}}(u)^{\!\T}(x - \mu_X).
+\end{equation}
+\end{comment}
+
+The following lemma shows that, under correct specification, $Q_{m^\est}(x)(u)$ and $(\beta^\est_0(u), \beta^\est_1(u))$ recover the structural quantile function $q(x,u)$ and coefficients $(\beta_0(u), \beta_1(u))$, respectively. 
+
+\begin{lemma}[Identification \est]\label{lem:identification_FIVR}
+Suppose that Assumptions \ref{ass:instrument_exogeneity} and \ref{ass:full_rank} 
+as well as the linear quantile model in Eq. \eqref{eq:linear_model} hold. Then 
+for all $x \in \mathcal{X}$ and $u \in (0,1)$,
+\[
+Q_{m^{\est}(x)}(u) = \psi_x(u) = q(x,u),
+\]
+and $\beta^{\est}(u) = \beta^{\text{unc}}(u) = \beta(u)$.
+\end{lemma}
+
+Under correct specification, the projection is inactive: since 
+$\psi_x(\cdot) = q(x, \cdot)$ is a valid quantile function for all 
+$x \in \mathcal{X}$, $\Pi_{\mathcal{Q}}(\psi_x) = \psi_x$ and the 
+Fr\'echet IV problem \eqref{eq:frechet-objective-fivr_intercept_pop} 
+recovers the structural quantile function exactly. 
+
+Under misspecification, $\psi_x(\cdot)$ may violate monotonicity for some 
+$x \in \mathcal{X}$, so $\Pi_{\mathcal{Q}}(\psi_x)$ may differ from $\psi_x$ 
+and consequently $\beta^{\est}(u)$ may differ from $\beta^{\text{unc}}(u)$. The 
+\est coefficients remain well-defined and interpretable: for each $x$, the 
+Fr\'echet IV solution $\Pi_{\mathcal{Q}}(\psi_x)$ is the closest valid probability 
+distribution to $\psi_x$ in $W_2$ distance, and $\beta^{\est}(u)$ parametrizes the 
+best linear approximation to these projected distributions. 
+
+
+\subsection{What does \est Identify?}
+\label{sec:identification_interpretation}
+
+Here we discuss the interpretation of coefficient $\beta_1(u)$. The formal results underlying this discussion are presented in Appendix \ref{app:individual_decomposition}. The coefficient $\beta_1(u)$ in the group-level quantile regression identifies the \emph{causal effect} of group-level treatments on the group outcome distribution. When treatment is assigned at the group level, this group-level effect is the natural structural parameter. It captures the total response of the group’s distribution to treatment, incorporating all channels through which the treatment operates.
+
+The group-level model \eqref{eq:linear_model} is agnostic about the within-group structure.  The group quantile function $Q_{Y_j}(u)$ is the primitive; no assumptions are made about what generates it within the group. In particular, the within-group distribution can arise from an arbitrary mixture of individual-level outcomes, and the composition of the group---who is in it---may itself respond to treatment. The parameter $\beta_1(u)$ captures all these channels.
+
+Formally, assuming that the treatment of interest is binary and using potential outcomes notation, denote the counterfactual group-level CDFs without and with treatment as $Y(0)$ and $ Y(1)$, respectively. Then the policy parameter our estimator targets is the \textit{total causal effect},
+\[
+\beta_1(u) = E[Q_{Y(1)}(u) - Q_{Y(0)}(u)],
+\]
+the average of the group-specific quantile treatment effects $Q_{Y(1)} - Q_{Y(0)}$. This object has a direct counterfactual interpretation: it is the difference in group quantile functions with and without the treatment, averaging over group-specific responses. Thus, the parameter $\beta_1(u)$ is a natural analog of the average treatment effect in the standard setting where the outcome is scalar-valued.
+
+This is different from the \emph{direct effect}, which as we show in Appendix \ref{app:individual_decomposition}, is the effect identified by approaches that control for individual-level covariates within groups (such as \CLP and \MP with individual controls). The direct effect holds the group composition (e.g. the share of low-skilled and high-skilled workers) fixed and measures only the within-type wage response (e.g. of low-skilled vs. high-skilled workers). By contrast, $\beta_1(u)$ captures both the within-type effect and the compositional response---changes in who is in the group.
+
+The total causal effect is the policy-relevant parameter in most applications. If a policymaker evaluates the impact of import competition on local wage distributions, they care about what actually happens to wages in affected regions, not a hypothetical scenario where wages change but workers cannot move. Indeed, the latter is often not a feasible policy. The total effect captures the equilibrium displacement of the distribution, and correctly characterizes the counterfactual effect on the treated unit, i.e., the entire group. The distinction between $\beta_1(u)$ and $\delta(u)$ is related to the distinction between unconditional and conditional quantile effects in the distributional treatment effects literature \citep{firpo2009unconditional, frolich2013unconditional}. 
+%The direct effect $\delta(u)$ averages within-type responses while holding type composition fixed, analogous to a conditional QTE; the total effect $\beta_1(u)$ averages over the effects on each group's realized quantile, analogous to an unconditional QTE. The key difference is that in our setting, the ``unconditional'' distribution is group-specific, and $\beta_1(u)$ averages group-level effects across groups. See Appendix \ref{app:individual_decomposition} for a formal decomposition of the gap between the two.
+
+
+
+
+\begin{example}[Total vs.\ direct effect: import competition]
+\label{ex:total_vs_direct}
+Consider commuting zones affected by an import competition shock, as in \CLP.  Suppose zones contain two worker types: college-educated (40\% of the workforce pre-shock) and non-college (60\%). The shock affects the two types differently: non-college workers, concentrated in competing manufacturing sectors, see wages fall by \$8K; college workers are largely insulated, with wages falling by only \$1K.
+
+If one were to control for individual education using the \CLP framework, the resulting estimand would be the direct effect, denoted by $\delta(u)$: the within-type wage response, aggregated across types while holding composition fixed. Because $Q_j(u)$ is a quantile of the \emph{mixture} of types and quantiles do not commute with mixing, $\delta(u)$ varies with $u$ even when both type-specific effects are constant, simply because because the type composition of workers located near the group's $u$-th quantile varies with $u$. Its variation across quantiles thus reflects both true treatment effect heterogeneity as well as heterogeneity in the cross-sectional density. 
+
+$\est$ directly targets the commuting zone's observed wage distribution without conditioning on worker types. For policy evaluation, this is often the estimand of interest. First, it captures all channels through which the zone-level shock operates, including the reshuffling of worker types across the distribution, which is a real consequence of the shock reflected in $\beta_1(u)$ but absent from $\delta(u)$. Second, since the treatment is assigned at the commuting zone level, the composition-fixed counterfactual underlying $\delta(u)$ may not correspond to a feasible intervention. That said, the direct effect $\delta(u)$ can be informative when the goal is to isolate the within-type wage response, for instance in decomposition exercises that aim to separate wage structure changes from compositional shifts. 
+
+In particular, suppose that the shock also induces selective out-migration, shifting the zone's workforce from 60/40 to roughly 45/55 non-college/college. This compositional response drives an additional wedge between $\delta(u)$ and $\beta_1(u)$, even when direct effects are homogeneous across types. A policymaker needs to know what \emph{actually happened} to the commuting zone's wage distribution, not what would have happened had sorting been held fixed. The total effect $\beta_1(u)$ provides exactly this. For a formal decomposition into direct, composition, and re-ranking components under the linear model, we refer to Appendix~\ref{app:individual_decomposition}.
+\end{example}
+
+\nddvd{Left off here}
+
+\subsubsection{Relationship to existing estimators}
+\label{sec:relationship_existing_literature}
+
+We now compare $\est$ to the estimators of \CLP and \MP. There are two cases.
+
+\paragraph{Without individual-level covariates.} When \CLP and \MP do not control for individual characteristics, their estimand coincides with ours: both identify the total effect $\beta(u)$. In this case, working directly with random distributions at the group level, as our estimator does, has several advantages. First, it allows us to avoid imposing any restrictions at the individual level, requiring only that the group quantile functions are linear in group-level covariates, while the individual-level structure can be fully nonparametric. Moreover, our framework allows for misspecification of this group-level linear structure. By contrast, the statistical results in \CLP and \MP depend on the linear structure at the individual as well as group level. Second, our estimator is a single estimation step: regressing the group-level quantile functions on the treatment. By contrast, \CLP and \MP imply a two-step procedure: first, a quantile regression at the individual level; second, an IV/GMM estimation at the group level. Third, by projecting the quantile functions and recovering coefficients by OLS, our estimator can exploit the functional nature of the data to improve precision, as formally shown in Theorem~\ref{thm:pw_ols_improvement} below. Fourth, our estimator for $\beta(u)$ is guaranteed to produce valid quantile functions at every observed covariate value, while \CLP and \MP are not.
+
+\paragraph{With individual-level covariates.} When \CLP and \MP control for individual characteristics $W_{ij}$, they identify the direct (within-type) effect $\delta(u)$, while \est continues to identify the total effect $\beta(u)$. These are different estimands; the difference is precisely the composition and re-ranking channels discussed in Example~\ref{ex:total_vs_direct} above. Which estimand is of interest depends on the application. Our instrument validity condition $\E[\tilde{Z}_j \eta_j(u)] = 0$ is equivalent to $\E[\tilde{Z}_j \alpha_j(u)] = 0$, i.e., orthogonality between the instrument and the group-level unobservable---the same condition required by \CLP and \MP (see Appendix~\ref{app:individual_decomposition} for a formal derivation).
+
+For a formal decomposition of $\beta_1(u)$ into direct, composition, and re-ranking components under an individual-level model, see Appendix~\ref{app:individual_decomposition}.
+
+\subsection{The \est estimator}\label{sec:div_estimator}
+
+The \est estimator solves the sample analogue of the population Fr\'echet IV problem \eqref{eq:frechet-objective-fivr_intercept_pop} at each observed covariate value, and recovers the linear parametrization by OLS:
+\begin{equation}\label{eq:div_estimator}
+\hat{\beta}^{\est}(u) = (\hat{\mathbf{X}}^{\!\T}\hat{\mathbf{X}})^{-1}\hat{\mathbf{X}}^{\!\T} \Pi_{\mathcal{Q}}(\hat{\psi}_{X_j})(u),
+\end{equation}
+where $\hat{\mathbf{X}}$ is the $n \times (p+1)$ matrix with rows $(1, (X_j - \hat{\mu}_X)^{\!\T})$, and $\hat{\psi}_x(u) := \frac{1}{n}\sum_{i=1}^n \hat{s}_i(Z_i, x)\, Q_{Y_i}(u)$ is the IV-weighted average quantile curve at $x$, with plug-in IV weights
+$$
+\hat{s}_{j}(Z_j,x) := 1 + (x-\hat{\mu}_X)^{\!\T} (\hat{\Sigma}_{ZX}^{\!\T}\hat{\Sigma}_{ZZ}^{-1}\hat{\Sigma}_{ZX})^{-1} \hat{\Sigma}_{ZX}^{\!\T}\hat{\Sigma}_{ZZ}^{-1} (Z_j-\hat{\mu}_Z).
+$$
+
+Since $\hat{\psi}_x(u)$ is linear in $x$, it defines unconstrained 2SLS coefficient functions $\tilde{\beta}(u) = (\tilde{\beta}_0(u), \tilde{\beta}_1(u)^{\!\T})^{\!\T}$ with $\hat{\psi}_x(u) = \tilde{\beta}_0(u) + \tilde{\beta}_1(u)^{\!\T}(x - \hat{\mu}_X)$. Because the IV weights can be negative, $\hat{\psi}_{X_j}(\cdot)$ may not be monotone. The projection $\Pi_{\mathcal{Q}}$ maps each IV-weighted average onto the space of valid quantile functions, yielding $\hat{Q}(X_j, u) := \Pi_{\mathcal{Q}}(\hat{\psi}_{X_j})(u)$---the closest valid probability distribution (in $W_2$) to the IV-weighted average at covariate value $X_j$. This is the sample IV-Fr\'echet barycenter, the sample analogue of the population projection \eqref{eq:projection-fivr_intercept_main}, and can be computed by the pool-adjacent-violators algorithm (PAVA). If only samples from $Y_j$ are available, $Q_{Y_j}(u)$ is replaced by its empirical estimate $\widehat{Q}_{Y_j}(u)$. We show below that, under a light assumption on the relation between within- and across-group sample sizes, this additional first-stage estimation does not affect our asymptotic results.
+
+The projection guarantees that each $\hat{Q}(X_j, \cdot)$ is a valid quantile function and is closer to the true structural quantile function $q(X_j, \cdot)$ than the unprojected $\hat{\psi}_{X_j}$ in all $L^p$ norms (Lemma~\ref{lemma:improvement} below). The OLS step in \eqref{eq:div_estimator} then recovers the linear parametrization from these projected evaluations. 
+
+\section{Theoretical properties of \est}
+
+\subsection{Finite-sample properties}
+
+\nddvd{TODO: streamline $\hat Q$ and $\hat q$ usage}
+
+The projection step in \est can only decrease the estimation error at each evaluation point. This is a classical property of isotonic projections \citep{Robertson1988}.
+
+\begin{lemma}[Improvement in estimation: quantile function]\label{lemma:improvement}
+Suppose that $\hat{Q}$ is an estimator of some true quantile function $Q_0 \in \mathcal{Q}$. Then $\hat{Q}^* = \Pi_{\mathcal{Q}}(\hat{Q})$ satisfies $\| \hat{Q}^*-Q_0\|_{L^p} \leq\|\hat{Q}-Q_0\|_{L^p}$ for all $p \in[1, \infty]$.
+\end{lemma}
+\begin{proof}
+See Corollary 2.4 in \citet{lin2019projection}, which proves the functional version of the classical result in \citet[Theorem 1.6.1]{Robertson1988}; see also \citet[Theorem 2.1]{groeneboom2014nonparametric}.
+\end{proof}
+
+Applied to \est, this result implies that at each observed $X_j$, the projected $\hat{Q}(X_j, \cdot) = \Pi_{\mathcal{Q}}(\hat{\psi}_{X_j})$ is closer to any valid quantile function than the unprojected $\hat{\psi}_{X_j}$, in every $L^p$ norm. We now show how this pointwise improvement translates into improvements for the coefficient functions recovered by OLS. Throughout, let $b=(b_0,b_1)$ with $b_0\colon[0,1]\to\R$ and $b_1\colon[0,1]\to\R^p$ denote any \emph{reference coefficients} such that $q_b(X_j,\cdot):=b_0(\cdot)+b_1(\cdot)^{\!\T}(X_j-\hat\mu_X)$ is a valid quantile function for all relevant observations. No assumption on the linear model~\eqref{eq:linear_model} is required for any of the results in this subsection.
+
+
+\begin{theorem}[Improvement in estimation: joint coefficients]\label{thm:pw_ols_improvement}
+Let $b=(b_0,b_1)$ be any target coefficients such that $q_b(X_j,\cdot)\in\mathcal Q$ for all $j=1,\ldots,n$. Then for any realization of the sample,
+\begin{equation}\label{eq:pw_improvement}
+\|\hat{\beta}_0^{\est} - b_0\|^2_{L^2} + \|\hat{\beta}_1^{\est} - b_1\|^2_{\hat{\Sigma}_{XX}, L^2} \;\leq\; \|\tilde{\beta}_0 - b_0\|^2_{L^2} + \|\tilde{\beta}_1 - b_1\|^2_{\hat{\Sigma}_{XX}, L^2},
+\end{equation}
+where $\hat{\Sigma}_{XX} = \frac{1}{n}\sum_{j=1}^n (X_j - \hat{\mu}_X)(X_j - \hat{\mu}_X)^{\!\T}$ and, for a vector-valued function $f\colon [0,1] \to \R^p$,
+\[
+\|f\|_{\hat{\Sigma}_{XX}, L^2}^2 := \int_0^1 f(u)^{\!\T}\, \hat{\Sigma}_{XX}\, f(u)\, \dd u.
+\]
+\end{theorem}
+
+
+The left-hand side of~\eqref{eq:pw_improvement} equals $(1/n)\sum_j W_2^2(\hat{Q}(X_j, \cdot), q_b(X_j, \cdot))$ minus the integrated OLS residual sum of squares: the projected Fr\'echet barycenters are on average closer to the target conditional distributions in Wasserstein distance. The bound is a weighted joint improvement in $(b_0, b_1)$; it does not guarantee improvement of any $b_{1,k}$ separately. The following results provide conditions under which the slope coefficients also improve separately. 
+
+To isolate individual slope coefficients, we use the Frisch--Waugh--Lovell (FWL) decomposition and the variational characterization of the isotonic projection. Let $C$ be the $n\times p$ matrix with rows $(X_j-\hat\mu_X)^{\!\T}$, write $c_k$ for its $k$-th column and $C_{-k}$ for $C$ with column $k$ removed. Define the FWL residual $r_k:=M_{-k}c_k$ with $M_{-k}:=I_n-C_{-k}(C_{-k}^{\!\T} C_{-k})^{-1}C_{-k}^{\!\T}$, let $r_{jk}$ denote its $j$-th entry, and set $J_k:=\{j\le n:r_{jk}\neq 0\}$ and $\hat v_k:=\frac{1}{n}\sum_{j=1}^n r_{jk}^2>0$. Let $\pi_k$ denote the coefficient vector from the sample linear projection of $c_k$ on $C_{-k}$, so that $c_k=C_{-k}\pi_k+r_k$. For a given target $b$, define the \emph{nuisance estimation error}
+\begin{equation}\label{eq:ejk}
+e_{jk}(u)
+\;:=\;
+\underbrace{(\tilde\beta_0-b_0)(u)}_{\text{intercept error}}
+\;+\;
+\underbrace{c_{j,-k}^{\!\T}
+\bigl[
+(\tilde\beta_{1,-k}-b_{1,-k})(u)+\pi_k(\tilde\beta_{1,k}(u)-b_{1,k}(u))
+\bigr]}_{\text{nuisance slope errors}},
+\end{equation}
+which collects all estimation errors \emph{except} the error in the $k$-th slope along the residualized variation $r_{jk}$. This decomposition is justified by the algebraic identity
+\begin{equation}\label{eq:decomp_identity}
+\hat\psi_{X_j}(u)
+\;=\;
+q_b(X_j,u)\;+\;e_{jk}(u)\;+\;r_{jk}\bigl(\tilde\beta_{1,k}(u)-b_{1,k}(u)\bigr),
+\end{equation}
+which separates the unconstrained fitted curve into the monotone target, the nuisance error, and the $k$-th slope error along $r_{jk}$.
+
+
+\begin{proposition}[Improvement in estimation: isolated coefficients]\label{prop:coord_improvement}
+Let $b=(b_0,b_1)$ be any reference coefficients such that $q_b(X_j,\cdot)\in\mathcal Q$ for all $j\in J_k$. Fix $k\in\{1,\ldots,p\}$. Then for any realization of the sample,
+\begin{equation}\label{eq:coord_bound_general}
+\|\hat\beta_{1,k}^{\est}-b_{1,k}\|_{L^2}^2
+\;\le\;
+\|\tilde\beta_{1,k}-b_{1,k}\|_{L^2}^2
+\;-\;\frac{1}{n\hat v_k}\sum_{j\in J_k}\|D_{X_j}\|_{L^2}^2
+\;-\;\frac{2}{n\hat v_k}\sum_{j\in J_k}\langle D_{X_j},\, e_{jk}\rangle_{L^2},
+\end{equation}
+where $D_{X_j}(u):=\hat{Q}(X_j,u)-\hat\psi_{X_j}(u)$ is the projection correction.
+\end{proposition}
+
+
+The bound~\eqref{eq:coord_bound_general} decomposes the change in $k$-th coefficient error into a \emph{projection gain} $\frac{1}{n\hat v_k}\sum_{j\in J_k}\|D_{X_j}\|^2_{L^2}$, which is always non-negative, and a \emph{nuisance cross-term} $\frac{2}{n\hat v_k}\sum_{j\in J_k}\langle D_{X_j}, e_{jk}\rangle_{L^2}$, which captures the interaction between projection corrections and nuisance estimation errors and can be negative or positive. Improvement obtains whenever the nuisance cross-term is positive or when it is negative but does not overwhelm the projection gain. The following corollary gives a sufficient condition that eliminates the nuisance cross-term entirely.
+
+\begin{corollary}[Sufficient condition for coefficientwise improvement]
+\label{cor:coord_sufficient}
+Under the setup of Proposition~\ref{prop:coord_improvement}, if the nuisance errors do not destroy the monotonicity of the target quantile functions, i.e.,
+\begin{equation}\label{eq:Ak_feas}
+q_b(X_j,\cdot)+e_{jk}(\cdot)\in\mathcal Q
+\qquad\text{for every }j\in J_k,
+\end{equation}
+then the nuisance cross-term in~\eqref{eq:coord_bound_general} is eliminated and
+\begin{equation}\label{eq:coord_bound_clean}
+\|\hat\beta_{1,k}^{\est}-b_{1,k}\|_{L^2}^2
+\;\le\;
+\|\tilde\beta_{1,k}-b_{1,k}\|_{L^2}^2
+\;-\;\frac{1}{n\hat v_k}\sum_{j\in J_k}\|D_{X_j}\|_{L^2}^2
+\;\le\;
+\|\tilde\beta_{1,k}-b_{1,k}\|_{L^2}^2.
+\end{equation}
+\end{corollary}
+
+
+
+
+\begin{remark}[Interpretation of the sufficient condition]
+\label{rem:coord_interpretation}
+Through the decomposition~\eqref{eq:decomp_identity}, condition~\eqref{eq:Ak_feas} requires that the error in the $k$-th slope along the identifying variation $r_{jk}$ is \emph{necessary} for any monotonicity violations in $\hat\psi_{X_j}$: the nuisance errors $e_{jk}$ may erode the monotonicity margin of $q_b(X_j,\cdot)$, but so long as they do not destroy it entirely, the projection corrections are fixing violations attributable to the $\beta_{1,k}$ error. Equivalently,~\eqref{eq:Ak_feas} asks that $q_b(X_j,\cdot)$ increases steeply enough to absorb whatever local decreases $e_{jk}$ introduces. Since every term in $e_{jk}$ is $O_p(n^{-1/2})$ uniformly in $u$ and $j$, the condition holds asymptotically whenever the target quantile functions have slopes bounded away from zero. The latter condition is natural insofar it is also required for uniform convergence of the estimators, as formalized in Assumption~\ref{asspt:average_strictness} below. In the scalar case $p=1$, there is no partialling out ($r_{j1}=X_j-\hat\mu_X$), the nuisance slope term in $e_{j1}$ vanishes, and~\eqref{eq:Ak_feas} reduces to $q_b(X_j,\cdot)\in\mathcal Q$, which is simply the assumed monotonicity of the target.
+\end{remark}
+
+
+\begin{remark}[Choice of target coefficients $b$]
+\label{rem:choice_of_reference} 
+\emph{Under correct specification.}
+When the linear model~\eqref{eq:linear_model} holds, set $b_0(u)=\beta_0(u)+(\mu_X-\hat\mu_X)^{\!\T}\beta_1(u)$ and $b_1=\beta_1$, so that $q_b(X_j,u)=q(X_j,u)\in\mathcal Q$. Then~\eqref{eq:pw_improvement} provides a bound on $\|\hat\beta_0^{\est}-\beta_0\|_{L^2}^2+\|\hat\beta_1^{\est}-\beta_1\|_{\hat\Sigma_{XX},L^2}^2$, and~\eqref{eq:coord_bound_general} provides a bound on $\|\hat\beta_{1,k}^{\est}-\beta_{1,k}\|_{L^2}^2$.
+
+\emph{Under misspecification.}
+When the linear model is misspecified, all bounds remain valid relative to any $b$ producing valid quantile functions at observed covariate values. Under Assumption~\ref{asspt:average_strictness}, the pseudo-true parameter $\beta^{\mathrm{unc}}$ produces strictly increasing quantile functions $\psi_x(\cdot)$ for all $x\in\mathcal X$ with slope at least $\kappa>0$. Since $\hat\mu_X\toP\mu_X$, for $n$ large enough $b=\beta^{\mathrm{unc}}$  satisfies $q_b(X_j,\cdot)\in\mathcal Q$ for all $j$ with probability approaching one, so both the joint bound~\eqref{eq:pw_improvement} and the coefficientwise bound~\eqref{eq:coord_bound_general} hold relative to $\beta^{\mathrm{unc}}$ asymptotically.
+\end{remark}
+
+
+\begin{remark}[Hierarchy of improvement results]\label{rem:hierarchy}
+Theorem~\ref{thm:pw_ols_improvement} and Proposition~\ref{prop:coord_improvement} are two endpoints of a spectrum, with Theorem \ref{thm:pw_ols_improvement} requiring no additional assumptions but only guaranteeing improvement for all coefficients jointly, while Proposition \ref{prop:coord_improvement} isolates improvements for each coefficient separately but requires additional assumptions on the nature of the non-monotonicity. A natural intermediate is to isolate a subset $S$ of coefficients for which one expects Corollary \ref{cor:coord_sufficient} to hold. In that case, an analogous improvement result holds for that subset of coefficients, with the nuisance error collecting only estimation errors from the intercept and the $(-S)$-slopes.
+
+
+\end{remark}
+
+\subsection{Asymptotic distribution}\label{sec:asymptotic_distribution}
+
+We establish functional central limit theorems for the \est estimator under weak conditions. We allow for discrete quantile functions and do not require the linear model \eqref{eq:linear_model} to hold in population. This contrasts with the existing inferential results for global Wasserstein-Fr\'echet regression \citep{petersen2021wasserstein} and grouped quantile methods \citep[e.g.,][]{chetverikov2016iv,melly2025minimum}, which assume densities and correct specification.
+
+\begin{assumption}[Sampling] \label{asspt:sampling}
+$\{(Z_j, X_j, Y_j)\}_{j=1}^n$ is sampled i.i.d.\ from the joint distribution $F$ on $\R^l \times \R^p \times \calP$, where $\calP$ is the space of CDFs with finite second moments.
+\end{assumption}
+
+\begin{assumption}[Finite 4th moments] \label{asspt:finite_moments}
+$\sup_{u \in [a,b]} E[|Q_{Y_j}(u)|^{4}] < \infty $, $E[\|Z_j\|^{4}] < \infty$, and $E[\|X_j\|^{4}] < \infty$.
+\end{assumption}
+
+Assumption~\ref{asspt:finite_moments} is our equivalent of the standard 4th moment condition in linear IV regression \citep[e.g.,][]{hansen2022econometrics}, implied by the boundedness assumptions in \CLP and \MP.
+
+\begin{assumption}[Average strictness] \label{asspt:average_strictness}
+There exists $\kappa>0$ such that for all $c<d$ with $[c,d]\subset [a,b]$ and all $x \in \mathcal{X}$,
+\[
+\E\!\Big[s(Z,x)\,\big\{Q_Y(d)-Q_Y(c)\big\}\Big]\;\ge\;\kappa\,(d-c).
+\]
+\end{assumption}
+
+Assumption~\ref{asspt:average_strictness} requires that $\psi_x(\cdot)$ is uniformly strictly increasing on $[a,b]$ with slope $\geq \kappa$, for all $x$ in the support. For scalar $X \in [\xbar, \xbaru]$, since $\psi_x$ is affine in $x$, strict increase at the support extremes implies strict increase everywhere. This is weaker than requiring every group to have a density bounded away from zero \citep{chetverikov2016iv}: we allow flat parts and atoms in individual group quantile functions. The assumption only requires that, on every percentile interval, a non-negligible IV-weighted share of groups contributes a positive increment. Technically, it places $\psi_x$ in the $L^\infty$-interior of the isotonic cone, where $\Pi_{\mathcal{Q}}$ is locally the identity and the functional delta method applies. See Appendix~\ref{app:inference_wo_average_strictness} for the case where Assumption~\ref{asspt:average_strictness} fails.
+
+\begin{remark}[Sufficient conditions for Average Strictness] \label{rem:smoothness}
+Assumption~\ref{asspt:average_strictness} does not require smoothness. It is implied by: (i) at every percentile, a fixed IV-weighted fraction of groups is locally ``moving'' (heterogeneous supports/atoms); (ii) a subset with IV weight $\geq \varepsilon$ has densities bounded by $C$, giving $\kappa \geq \varepsilon/C$; or (iii) location-scale heterogeneity with $\sigma \geq \sigma_{\min} > 0$ in IV mean.
+\end{remark}
+
+The first two results concern the IV-weighted quantile curve $\hat{\psi}_x$ at a fixed $x$; the remaining two concern the coefficient functions.
+
+\begin{theorem}[CLT for the unprojected estimator] \label{thm:convergence_unprojected}
+Under Assumptions \ref{ass:instrument_exogeneity}--\ref{asspt:finite_moments} for fixed $x$,
+\[
+\sqrt{n} \left( \hat{\psi}_x(\cdot) - \psi_x(\cdot) \right) \leadsto \mathbb{G}(\cdot) \quad \text{in } \ell^\infty([a,b]),
+\]
+where $\mathbb{G}$ is a tight zero-mean Gaussian process with covariance $\Gamma(u,u') = \E[s(Z,x)^2\, \xi(u)\,\xi(u')]$ and $\xi(u) = Q_Y(u) - \mathbf{X}^{\!\T} \beta^{\text{unc}}(u)$.
+\end{theorem}
+
+\begin{theorem}[CLT for the projected quantile function] \label{thm:convergence_projected}
+Under Assumptions \ref{ass:instrument_exogeneity}--\ref{asspt:average_strictness} for fixed $x$,
+\[
+\sqrt{n}\left( \Pi_{\mathcal{Q}}(\hat{\psi}_x)(\cdot) - \psi_x(\cdot) \right) \leadsto \mathbb{G}(\cdot)  \quad \text{in } \ell^\infty([a,b]),
+\]
+the same process as in Theorem~\ref{thm:convergence_unprojected}. Under Average Strictness, the projection is asymptotically free.
+\end{theorem}
+
+\begin{theorem}[CLT for the unconstrained coefficients] \label{thm:convergence_beta}
+Under Assumptions \ref{ass:instrument_exogeneity}--\ref{asspt:average_strictness},
+\[
+\sqrt{n}\big(\tilde{\beta}(\cdot) - \beta^{\text{unc}}(\cdot)\big) \leadsto \mathbb{G}_{\beta}(\cdot) \quad \text{in } \ell^\infty([a,b])^{p+1},
+\]
+where $\mathbb{G}_{\beta}$ is a tight mean-zero Gaussian process with covariance
+$\Omega(u, u') = \bar{S}_{\mathrm{2SLS}} \, \E[\mathbf{Z}\mathbf{Z}^{\T} \xi(u)\xi(u')] \, \bar{S}_{\mathrm{2SLS}}^{\T}$, $\bar{S}_{\mathrm{2SLS}} = (\Sigma_{\mathbf{Z}\mathbf{X}}^{\!\T}\Sigma_{\mathbf{Z}\mathbf{Z}}^{-1}\Sigma_{\mathbf{Z}\mathbf{X}})^{-1}\Sigma_{\mathbf{Z}\mathbf{X}}^{\!\T}\Sigma_{\mathbf{Z}\mathbf{Z}}^{-1}$, and $\xi(u) = Q_Y(u) - \mathbf{X}^{\!\T}\beta^{\text{unc}}(u)$. Under correct specification, $\beta^{\text{unc}}(u) = \beta(u)$ and $\xi(u) = \eta(u)$.
+\end{theorem}
+
+\begin{theorem}[CLT for the \est estimator]\label{thm:pw_ols_clt}
+Under the same assumptions as Theorem~\ref{thm:convergence_beta},
+\[
+\sqrt{n}\big(\hat{\beta}^{\est}(\cdot) - \beta^{\est}(\cdot)\big) \leadsto \mathbb{G}_\beta(\cdot) \quad \text{in } \ell^\infty([a,b])^{p+1},
+\]
+the same Gaussian process as the unconstrained estimator. Under Average Strictness, $\beta^{\est} = \beta^{\text{unc}}$ (Section~\ref{sec:population_fivr_problem_identification}), so the centering coincides with Theorem~\ref{thm:convergence_beta}. The proof decomposes $\hat{\beta}^{\est} = \tilde{\beta} + \Delta_n$ and shows $\sqrt{n}\|\Delta_n\|_\infty = o_P(1)$ using the Hadamard differentiability of $\Pi_{\mathcal{Q}}$; see Appendix~\ref{app:pw_ols_proof}.
+\end{theorem}
+
+The \est estimator has the same asymptotic variance as unconstrained 2SLS, while Theorem~\ref{thm:pw_ols_improvement} guarantees smaller finite-sample risk. Standard 2SLS inference remains valid.
+
+
+\subsection{Inference}
+
+Since \est and unconstrained 2SLS share the limiting process $\mathbb{G}_\beta$ under Assumption~\ref{asspt:average_strictness}, inference can be based on the unconstrained influence functions without recomputing the projection.
+
+\paragraph{Pointwise inference.} For $\beta^{\est}(u_0)$ at a fixed $u_0$, the asymptotic variance is $\Omega(u_0, u_0)/n$ from Theorem~\ref{thm:convergence_beta}. A consistent estimator is
+\[
+\hat{\Omega}(u_0, u_0) = \hat{\bar{S}}_{\mathrm{2SLS}} \left(\frac{1}{n}\sum_{j=1}^n \hat{\mathbf{Z}}_j \hat{\mathbf{Z}}_j^{\!\T} \hat{\xi}_j(u_0)^2\right) \hat{\bar{S}}_{\mathrm{2SLS}}^{\!\T},
+\]
+where $\hat{\bar{S}}_{\mathrm{2SLS}}$ is the sample analogue and $\hat{\xi}_j(u_0) = Q_{Y_j}(u_0) - \hat{\mathbf{X}}_j^{\!\T}\hat{\beta}^{\est}(u_0)$.
+
+\paragraph{Uniform inference.} For uniform confidence bands over $u \in [a,b]$, we use a multiplier bootstrap. Let $\{\omega_j\}_{j=1}^n$ be i.i.d.\ $N(0,1)$ weights independent of the data. The bootstrap process is $\hat{\mathbb{G}}_\beta^*(u) = \hat{\bar{S}}_{\mathrm{2SLS}} \frac{1}{\sqrt{n}}\sum_{j=1}^n \omega_j \hat{\mathbf{Z}}_j \hat{\xi}_j(u)$. The $(1-\alpha)$ uniform band is $\hat{\beta}^{\est}(u) \pm \hat{c}_{1-\alpha} \cdot \hat{\sigma}(u)$, where $\hat{c}_{1-\alpha}$ is the $(1-\alpha)$-quantile of $\sup_u |\hat{\mathbb{G}}_\beta^*(u)| / \hat{\sigma}(u)$ conditional on the data.
+
+
+\section{Monte Carlo simulations}
+\label{sec:simulation}
+
+We compare unconstrained 2SLS with \est across 500 Monte Carlo replications.
+
+\subsection{Data generating process}
+
+We generate data from a grouped data design with $n$ groups and $N$ observations per group. The group-level treatment $X_j$ is endogenous:
+\[
+X_j = \pi_Z Z_j + 0.7\, v_j + \varepsilon_j, \quad Z_j \sim N(0,1), \quad v_j \sim N(0,1), \quad \varepsilon_j \sim N(0,1),
+\]
+where $\pi_Z$ controls IV strength. The structural quantile function is
+\[
+q(x, u) = \beta_0(u) + \beta_1(u)(x - \mu_X), \quad \beta_0(u) = \Phi^{-1}(u), \quad \beta_1(u) = 1 + \beta_{\text{slope}} \cdot \Phi^{-1}(u),
+\]
+with $\beta_{\text{slope}} > 0$ controlling the degree of treatment effect heterogeneity across quantiles. Individual outcomes within group $j$ are drawn from the distribution implied by $q(X_j, \cdot)$, contaminated by the confounding term $v_j$. Quantile functions are evaluated on a grid of 17 points from $u = 0.10$ to $u = 0.90$.
+
+The baseline specification uses $n = 30$ groups, $N = 25$ observations per group, $\pi_Z = 0.25$, and $\beta_{\text{slope}} = 0.3$. We vary one parameter at a time to study each factor's effect.
+
+\subsection{Results}
+
+\paragraph{IV strength.} Table~\ref{tab:iv_strength} reports MSE and percentage improvements as a function of IV strength ($\pi_Z$). The projection delivers its largest gains when instruments are weak: at $\pi_Z = 0.10$, \est reduces MSE by 22.5\% relative to unconstrained 2SLS. The gain falls to about 5\% at moderate IV strength ($\pi_Z = 0.20$--$0.30$) and becomes negligible ($< 1\%$) with strong instruments ($\pi_Z = 0.50$). This pattern is expected---weak instruments inflate the variance of $\tilde{\beta}_1(u)$, leading to more frequent monotonicity violations that the projection corrects.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{cccc}
+\hline
+$\pi_Z$ & MSE (2SLS) & MSE (\est) & \% Gain \\
+\hline
+0.10 & 162.2 & 125.8 & 22.3 \\
+0.15 & 233.0 & 213.1 & 8.4 \\
+0.20 & 6.0 & 5.7 & 5.0 \\
+0.25 & 4.0 & 3.9 & 3.7 \\
+0.30 & 1.5 & 1.5 & 4.8 \\
+0.50 & 0.04 & 0.04 & 0.4 \\
+\hline
+\end{tabular}
+\caption{Effect of IV strength ($n = 30$, $N = 25$, $\beta_{\text{slope}} = 0.3$). MSE is $\int \|\hat{\beta}(u) - \beta(u)\|^2\, du$ averaged over replications. ``\% Gain'' is the MSE reduction relative to unconstrained 2SLS.}
+\label{tab:iv_strength}
+\end{table}
+
+\paragraph{Sample size.} Table~\ref{tab:sample_size} reports results for selected $(n, N)$ combinations. The gains from projection are largest when the number of groups $n$ is small (10.2\% at $n = 25$, $N = 10$) and diminish as $n$ grows (1.1\% at $n = 100$, $N = 25$). The within-group sample size $N$ affects the precision of the estimated group quantile functions but has a less systematic effect on the projection gains.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ccccc}
+\hline
+$n$ & $N$ & MSE (2SLS) & MSE (\est) & \% Gain \\
+\hline
+15 & 10 & 67.7 & 64.5 & 4.7 \\
+25 & 10 & 26.3 & 23.8 & 9.6 \\
+25 & 25 & 73.2 & 68.4 & 6.5 \\
+50 & 25 & 2.0 & 1.99 & 2.1 \\
+100 & 25 & 0.08 & 0.084 & 0.4 \\
+100 & 100 & 0.06 & 0.058 & 0.03 \\
+\hline
+\end{tabular}
+\caption{Effect of sample size ($\pi_Z = 0.25$, $\beta_{\text{slope}} = 0.3$). Format as in Table~\ref{tab:iv_strength}.}
+\label{tab:sample_size}
+\end{table}
+
+\paragraph{Treatment effect heterogeneity.} Table~\ref{tab:heterogeneity} varies $\beta_{\text{slope}}$, which controls how much the treatment effect varies across quantiles. With homogeneous effects ($\beta_{\text{slope}} = 0$), the projection still provides a small gain (2.6\%) because the intercept function $\beta_0(u) = \Phi^{-1}(u)$ can have its monotonicity disrupted by estimation noise. The gain rises with heterogeneity, reaching 14.8\% at $\beta_{\text{slope}} = 0.2$, before declining somewhat at higher levels. The non-monotonicity in gains as a function of $\beta_{\text{slope}}$ reflects the interaction between the DGP's inherent monotonicity margin and the variance of the estimator.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{cccc}
+\hline
+$\beta_{\text{slope}}$ & MSE (2SLS) & MSE (\est) & \% Gain \\
+\hline
+0.0 & 2493 & 2427 & 2.7 \\
+0.1 & 9772 & 8963 & 8.3 \\
+0.2 & 54.9 & 47.0 & 14.3 \\
+0.3 & 69.4 & 64.1 & 7.6 \\
+0.4 & 30.2 & 29.4 & 2.6 \\
+0.5 & 33.4 & 31.7 & 5.0 \\
+\hline
+\end{tabular}
+\caption{Effect of treatment effect heterogeneity ($n = 30$, $N = 25$, $\pi_Z = 0.2$). Format as in Table~\ref{tab:iv_strength}.}
+\label{tab:heterogeneity}
+\end{table}
+
+\paragraph{Multivariate regressors.} Table~\ref{tab:multivariate} reports results for $p \in \{1, 2, 3\}$ regressors with moderate and high heterogeneity.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ccccc}
+\hline
+$p$ & $\beta_{\text{slope}}$ & MSE (2SLS) & MSE (\est) & \% Gain \\
+\hline
+1 & 0.3 & 1890 & 1840 & 2.6 \\
+2 & 0.3 & 1029 & 975 & 5.2 \\
+3 & 0.3 & 2.3 & 2.14 & 7.8 \\
+1 & 0.5 & 41.6 & 40.1 & 3.7 \\
+2 & 0.5 & 220 & 216 & 2.0 \\
+3 & 0.5 & 7.2 & 6.74 & 6.8 \\
+\hline
+\end{tabular}
+\caption{Multivariate regressors ($\pi_Z = 0.2$, $n = 30$--$40$, $N = 15$).}
+\label{tab:multivariate}
+\end{table}
+
+
+\paragraph{Extreme scenarios.} Under a combination of weak IV ($\pi_Z = 0.1$), small sample ($n = 20$), and high heterogeneity ($\beta_{\text{slope}} = 0.4$), the \est estimator reduces MSE by 49.8\%. This is a setting where the unconstrained 2SLS estimates are highly volatile and frequently violate monotonicity. The projection corrects these violations and brings estimates closer to the constrained target.
+
+\subsection{Summary}
+
+The simulations confirm the theoretical predictions. The projection step in \est reduces finite-sample MSE, with the largest gains under weak instruments and small samples. The improvement is monotonically decreasing in IV strength and sample size. In all cases, the projection does not introduce bias: the bias of \est equals that of unconstrained 2SLS across all designs, confirming that the projection only reduces variance.
+
+
+\section{Empirical illustration}
+
+[To be completed.]
+
+
+\newpage
+
+%key here is simply that instrument exogeneity in Pons implies it in our setting
+
+
+
+\bibliography{references} 
+\bibliographystyle{apalike} 
+
+\appendix
+\clearpage
+
+\section{Mathematical Notation}
+\paragraph{The Projection Operator \texorpdfstring{$\Pi_{\mathcal{Q}}$}{Pi Q}.}
+
+Let $L^2([0,1])$ be the Hilbert space of square-integrable functions on the unit interval, equipped with the standard inner product $\langle f, g \rangle = \int_0^1 f(u) g(u) \dd q$ and norm $\|f\|_{L^2} = \sqrt{\langle f, f \rangle}$. Let $\calQ \subset L^2([0,1])$ be the subset of functions that are non-decreasing. $\calQ$ is a closed convex cone in $L^2([0,1])$.
+
+The projection operator $\Pi_{\mathcal{Q}}: L^2([0,1]) \to \calQ$ maps any function $f \in L^2([0,1])$ to its unique closest element in $\calQ$ under the $L^2$ norm:
+\[ \Pi_{\mathcal{Q}}(f) := \argmin_{h \in \calQ} \| f - h \|_{L^2}^2 = \argmin_{h \in \calQ} \int_0^1 (f(u) - h(u))^2 \dd q. \]
+This projection is well-defined and unique. Computationally, for a function evaluated on a grid, $\Pi_{\mathcal{Q}}(f)$ can be computed using the Pool Adjacent Violators Algorithm (PAVA). If $f \in \calQ$, then $\Pi_{\mathcal{Q}}(f) = f$.
+
+
+\section{Inference when Assumption \ref{asspt:average_strictness} fails}
+\label{app:inference_wo_average_strictness}
+
+
+If one prefers not to maintain Assumption \ref{asspt:average_strictness}, there are at least two alternatives:
+
+\begin{enumerate}
+\item \textbf{Directional-differentiability route (tangent-cone delta method).} 
+It is known that \(\Pi_{\mathcal Q}\) is (Hadamard) directionally differentiable at every \(f\in L^2([0,1])\). At a boundary point \(f=\psi_x\), the directional derivative \(D\Pi_{\mathcal Q}(\psi_x)[h]\) is a continuous linear map obtained by projecting the perturbation \(h\) onto the appropriate tangent/critical cone at \(\psi_x\) (in particular, it equals the identity on strictly increasing segments and averages $h$ over flat blocks). One can therefore obtain the weak limit of
+\(\sqrt{n}(\Pi_{\mathcal Q}\hat\psi_x-\Pi_{\mathcal Q}\psi_x)\)
+via the delta method for directionally differentiable functionals (e.g.\ the framework of Fang--Santos), and implement inference with a suitable ``bootstrap with estimated derivative'' (multiplier or numerical delta) in place of the naive bootstrap.
+
+\item \textbf{Interiorizing regularization (two regimes).} 
+Fix a smooth ``hill'' \(H\ge 0\) that is strictly positive on \(U\) and define the perturbed targets and estimators
+\[
+\psi_x^\eta=\psi_x+\eta_n H,\qquad \hat\psi_x^\eta=\hat\psi_x+\eta_n H,\qquad 
+\hat Q^\eta(x)=\Pi_{\mathcal Q}\hat\psi_x^\eta.
+\]
+\emph{(i) Fast-shrinking:} if \(\eta_n=o(\sigma_n)\) with \(\sigma_n\) the stochastic scale (e.g.\ \(\sigma_n=(nh)^{-1/2}\) in your local setting), then non-expansiveness of \(\Pi_{\mathcal Q}\) gives
+\(\|\sqrt{n}(\hat Q^\eta(x)-\hat Q(x))\|_\infty= o_p(1)\),
+so the limit law is the \emph{same} as at the boundary. This device can simplify proofs (work at interior points for each \(n\)), but it \emph{does not} remove the need for the directional-delta-method asymptotics.\\
+\emph{(ii) Slow-shrinking (regularized estimand):} if instead \(\eta_n\gg \sigma_n\) (or \(\eta_n\equiv\eta>0\)), then \(\psi_x^\eta\) is strictly increasing on \(U\) and standard Hadamard differentiability applies. One obtains Gaussian inference for the \emph{regularized} target \(\Pi_{\mathcal Q}\psi_x^\eta=\psi_x^\eta\), with a bias \(\|\psi_x^\eta-\psi_x\|=O(\eta_n)\). This yields off-the-shelf inference at the cost of targeting a pseudo-true parameter arbitrarily close to the original one.
+\end{enumerate}
+
+
+
+
+\section{Decomposition under an individual-level model}
+\label{app:individual_decomposition}
+
+This appendix develops a formal decomposition of the group-level treatment effect $\beta_1(u)$ into direct, composition, and re-ranking components, under an individual-level quantile model as in \citet{chetverikov2016iv}. The total causal effect $\beta_1(u) = E[Q_{Y(1)}(u) - Q_{Y(0)}(u)]$ was defined in Section~\ref{sec:identification_interpretation}.
+
+\subsection{Individual-level model}
+
+To understand the channels through which group-level treatment affects the outcome distribution, consider a model at the level of within-group individuals, as in \citet{chetverikov2016iv}.
+
+Let individuals $i$ be nested within groups $j$, and let $W_{ij} \in \mathbb{R}^d$ denote observed individual characteristics. Suppose individual outcomes satisfy:
+\begin{equation}\label{eq:micro}
+ Q_{Y_{ij}}(u \mid W_{ij}, X_j) = W_{ij}^{\T} \gamma(u) + X_j^{\T} \delta(u) + \alpha_j(u), \qquad \E[\alpha_j(u) \mid W_{ij}, X_j] = 0,
+\end{equation}
+where $\gamma(u)$ is the coefficient on individual characteristics, $\delta(u)$ is the direct effect of group treatment on the quantile conditional on those characteristics, and $\alpha_j(u)$ is group-level unobserved heterogeneity. By the Skorohod representation \citep{skorokhod1956limit}, this implies a model for the scalar-valued outcome $Y_{ij}$ of individual $i$ in group $j$,
+\begin{equation} \label{eq:skorohod}
+Y_{i j}=W_{i j}^{\mathrm{T}} \gamma\left(U_{i j}\right)+X_j^{\mathrm{T}} \delta\left(U_{i j}\right)+\alpha_j\left(U_{i j}\right),
+\end{equation}
+where $U_{ij} \sim \mathrm{Uniform}[0,1]$.
+Denote the distribution of individual characteristics within group $j$ as $H_j(\cdot; X_j)$, with mean $\bar{W}_j(X_j) := \int w \, \dd H_j(w; X_j)$.
+
+A key feature of this setup is that the mixing distribution $H_j$ may itself depend on $X_j$. Treatment can affect who is in each group through hiring, attrition, migration, or sorting.
+
+In what follows, we decompose $\beta_1(u)$ into a direct effect $\delta(u)$ and two composition terms. To interpret the decomposition economically, we consider the setting where the group is a commuting zone, the individual is a worker, and the outcome distribution is the local wage distribution.
+
+\subsection{Two quantile concepts}
+
+Two distinct group-level quantile objects arise from aggregating the individual conditional quantile model. Let observable worker ``types'' be indexed by $w$, with type distribution $H_j(w;X)$ in group $j$ under treatment state $X\in\{0,1\}$. Assume the linear conditional quantile specification
+\begin{equation}\label{eq:indiv_q}
+Q_{Y_{ij}}(u\mid w,X)=w^{\T}\gamma(u)+X\,\delta(u)+\alpha_j(u),
+\end{equation}
+For ease of exposition, assume for the moment that $\alpha_j$ is exogenous to treatment assignment (random assignment at the group level); Section~\ref{sec:iv_decomposition} discusses the IV analogue.
+
+\paragraph{The composition-fixed quantile.}
+Following \citet{petersen2021wasserstein}, the Wasserstein--Fr\'echet integral (WFI) quantile averages conditional \emph{quantile functions} across types:
+\begin{equation}\label{eq:wfi_new3}
+Q_j^{\oplus}(u;X)
+:=\int Q_{Y_{ij}}(u\mid w,X)\,\dd H_j(w;X)
+=\bar W_j(X)^{\T}\gamma(u)+X\,\delta(u)+\alpha_j(u),
+\end{equation}
+where $\bar W_j(X):=\int w\,\dd H_j(w;X)$. This object answers: \emph{what is the average type-specific $u$-quantile, holding the type composition fixed at $H_j(\cdot;X)$?}
+
+\paragraph{The realized group quantile.}
+The observed group quantile is the quantile of the mixture distribution:
+\begin{equation}\label{eq:group_new3}
+Q_j(u;X)
+:=\inf\Big\{y:\int F_{Y_{ij}}(y\mid w,X)\,\dd H_j(w;X)\ge u\Big\},
+\end{equation}
+where $F_{ij}$ is the CDF of the individual-level outcome $Y_{ij}$ in \eqref{eq:skorohod}, i.e. the inverse of the quantile function $Q_{Y_{ij}}$. The group-level quantile function, $Q_j(u; X)$, is what the researcher observes: \emph{the unconditional $u$-quantile of outcomes in group $j$.}
+
+Since quantiles and mixing do not commute, define the gap
+\begin{equation}\label{eq:Delta_new3}
+\Delta_j(u;X):=Q_j(u;X)-Q_j^{\oplus}(u;X).
+\end{equation}
+A convenient representation uses the re-ranking map,
+\begin{equation}\label{eq:rerank_map_new3}
+t_{jX}(w;u)\;:=\;F_{Y_{ij}}\!\big(Q_j(u;X)\mid w,X\big)\in[0,1],
+\end{equation}
+the within-type percentile attained by type $w$ at the \emph{group} $u$-quantile cutoff. Let $Q_{Y_{ij}}(\cdot\mid w,X)$ denote the conditional quantile function (inverse CDF). Then
+\begin{equation}\label{eq:Delta_as_D_new3}
+\Delta_j(u;X)=\int D_{jX}(u\mid w)\,\dd H_j(w;X),
+\qquad
+D_{jX}(u\mid w):=
+Q_{Y_{ij}}\!\big(t_{jX}(w;u)\mid w,X\big)-Q_{Y_{ij}}(u\mid w,X).
+\end{equation}
+Thus the gap is the average \emph{within-type percentile shift} required for each type to hit the common group cutoff.
+
+
+\subsection{Treatment effect decomposition}
+
+Let $\beta(u)$ be the slope from the population projection of the realized group quantile $Q_j(u;X_j)$ onto $(1,\tilde X_j)$, with $\tilde X_j:=X_j-\mu_X$ and $\Sigma_{XX}:=\E[\tilde X_j^2]$:
+\begin{equation}\label{eq:beta_proj_new3}
+\beta(u):=\Sigma_{XX}^{-1}\E\!\left[\tilde X_j\,Q_j(u;X_j)\right].
+\end{equation}
+Using the identity
+\begin{equation}\label{eq:Q_split_new3}
+Q_j(u;X)=Q_j^{\oplus}(u;X)+\Delta_j(u;X),
+\end{equation}
+together with the closed form for $Q_j^{\oplus}$ in \eqref{eq:wfi_new3}, we obtain the decomposition
+\begin{equation}\label{eq:beta_decomp_new3}
+\beta(u)
+=
+\underbrace{\delta(u)}_{\text{Direct (within-type)}}
++
+\underbrace{\Sigma_{XX}^{-1}\E\!\left[\tilde X_j\,\bar W_j(X_j)^{\T}\gamma(u)\right]}_{\text{Mean composition / sorting}}
++
+\underbrace{\Sigma_{XX}^{-1}\E\!\left[\tilde X_j\,\Delta_j(u;X_j)\right]}_{\text{Re-ranking / aggregation}}
+.
+\end{equation}
+Equation \eqref{eq:beta_decomp_new3} is the form that extends immediately to IV: in the IV case, the same terms appear with $\tilde X_j$ replaced by the instrument-induced projection of $X_j$ (and the corresponding $\Sigma_{XX}^{-1}$ replaced by the usual IV matrix), exactly as in linear IV.
+
+\paragraph{Binary treatment.}
+When treatment is binary, i.e. $X_j\in\{0,1\}$, \eqref{eq:beta_decomp_new3} is equivalent to a decomposition in treatment effects. Specifically, for any square-integrable function $g(X_j)$,
+\begin{equation}\label{eq:binary_proj_identity}
+\Sigma_{XX}^{-1}\E\!\left[\tilde X_j\,g(X_j)\right]
+=
+\E\!\left[g(1)-g(0)\right],
+\end{equation}
+since $\Sigma_{XX}=\mu_X(1-\mu_X)$ and $\E[\tilde X_j g(X_j)]=\mu_X(1-\mu_X)\{g(1)-g(0)\}$ with $X_j$ binary. Applying \eqref{eq:binary_proj_identity} yields
+\begin{equation}\label{eq:TE_beta_new3}
+\beta(u)
+=
+\underbrace{\delta(u)}_{\text{Direct (within-type)}}
++
+\underbrace{\E\!\left[\bar W_j(1)-\bar W_j(0)\right]^{\T}\gamma(u)}_{\text{Mean composition / sorting}}
++
+\underbrace{\E\!\left[\Delta_j(u;1)-\Delta_j(u;0)\right]}_{\text{Re-ranking / aggregation (TE on the gap)}}
+.
+\end{equation}
+
+This decomposition separates three economically distinct channels by which treatment changes a group's realized wage quantile $Q_j(u;X)$.
+\begin{enumerate}
+\item \textbf{Direct (within-type) effect $\delta(u)$.} This is the partial-equilibrium shift in the $u$-th \emph{conditional} quantile for a fixed type. For example, holding skill group fixed (high-skill vs low-skill), $\delta(u)$ is the average change in the $u$-th wage quantile within each skill group when the group is treated.
+
+\item \textbf{Mean composition / sorting $\E[\bar W_j(1)-\bar W_j(0)]^{\T}\gamma(u)$.} Treatment can change who is in the group, through e.g. entry/exit or sorting, so the treated group may become more high-skill on average. This term prices that workforce shift using $\gamma(u)$, i.e.\ the ``return to type'' at percentile $u$.
+
+\item \textbf{Re-ranking / aggregation $\E[\Delta_j(u;1)-\Delta_j(u;0)]$.} Even if the group's average type were unchanged, the group's $u$-quantile depends on \emph{which within-type ranks} are marginal at the group cutoff. If high-skill wages have a thicker upper tail, the group's 90th percentile may correspond to a lower within-high-skill percentile than within-low-skill. Treatment can change this mapping (the $t_{jX}(w;u)$ functions) by changing dispersion/tails and/or changing the mix of types, which moves realized quantiles beyond what $\delta(u)$ captures.
+\end{enumerate}
+
+The re-ranking effect can be further decomposed. Abbreviating $t_{jX}(w;u)$ by $t_X$, it is simply the integral of \eqref{eq:indiv_q} over $H_j(\cdot;X)$ across all types $w$,
+\begin{equation}\label{eq:Delta_decomp_binary_new4}
+\begin{aligned}
+\Delta_j(u;X)
+&=
+\E_{H_j(\cdot;X)}\!\Big[
+w^{\T}\big(\gamma(t_{jX}(w;u))-\gamma(u)\big)
+\Big]
++
+X\,\E_{H_j(\cdot;X)}\!\Big[
+\delta(t_{jX}(w;u))-\delta(u)
+\Big]
+\\
+&\qquad\qquad
++
+\E_{H_j(\cdot;X)}\!\Big[
+\alpha_j(t_{jX}(w;u))-\alpha_j(u)
+\Big].
+\end{aligned}
+\end{equation}
+
+The gap $\Delta_j(u;X)$ is the average \emph{within-type percentile shift} required for each observable type to reach the common group cutoff $Q_j(u;X)$.
+If high-skill and low-skill workers have differently shaped conditional wage distributions (e.g., high-skill has a thicker upper tail), then the workers who are marginal at the group's $u$-th quantile are not at the same within-type percentile across types: $t_{jX}(w;u)\neq u$ in general.
+Equation \eqref{eq:Delta_decomp_binary_new4} makes clear that re-ranking affects the realized group quantile only through \emph{shape}, i.e. through how $\gamma(\cdot)$, $\delta(\cdot)$, and $\alpha_j(\cdot)$ vary with the quantile index.
+
+Treatment can affect this rearrangement because $X$ changes the mixture distribution itself: it can shift the type distribution $H_j(\cdot;X)$ (entry/exit/sorting) and it can change the mapping $w\mapsto t_{jX}(w;u)$ (which within-type percentiles are pivotal at the group cutoff).
+Thus, even holding fixed the within-type effect $\delta(u)$, the same non-commutativity mechanism that generates $\Delta_j(u;X)$ in any state will generally produce different gaps under $X=1$ and $X=0$.
+
+The decomposition further shows that the re-ranking channel is first-order only to the extent that there are shape effects: it is amplified when (i) returns to type vary over the distribution ($u\mapsto\gamma(u)$ is not flat), (ii) treatment effects vary over quantiles ($u\mapsto\delta(u)$ is not flat), and/or (iii) the latent group quantile function $\alpha_j(u)$ is curved.
+
+
+\subsection{IV interpretation} \label{sec:iv_decomposition}
+
+When we relax the exogeneity assumption in favor of the instrument exogeneity assumption $E\left[Z_j \alpha_j(u)\right]=0$, the IV estimand admits a similar decomposition,
+\begin{equation}\label{eq:beta-iv-decomp}
+\beta^{\mathrm{IV}}(u)
+=
+\delta(u)
++
+\Pi_{Z\to X}\E\!\left[\tilde Z_j\,\bar W_j(X_j)^{\T}\gamma(u)\right]
++
+\Pi_{Z\to X}\E\!\left[\tilde Z_j\,\Delta_j(u;X_j)\right]
+\end{equation}
+where $\Pi_{Z\to X}:=(\Sigma_{XZ}\Sigma_{ZZ}^{-1}\Sigma_{ZX})^{-1}\Sigma_{XZ}\Sigma_{ZZ}^{-1}$ is the usual population 2SLS operator (the reduced-form moment scaled by the first stage).
+
+For the group-level IV regression model in \eqref{eq:linear_model}, we can write,
+\begin{equation}\label{eq:eta_def}
+\eta_j(u):=\alpha_j(u)+r^{\text{mean}}_j(u)+r^{\text{shape}}_j(u).
+\end{equation}
+where
+\begin{align}
+r^{\text{mean}}_j(u)
+&:=
+\bar W_j(X_j)^{\T}\gamma(u)
+-
+\Big(\Pi_{Z\to X}\E[\tilde Z_j\,\bar W_j(X_j)^{\T}\gamma(u)]\Big)X_j,
+\label{eq:r_mean_def}
+\\
+r^{\text{shape}}_j(u)
+&:=
+\Delta_j(u;X_j)
+-
+\Big(\Pi_{Z\to X}\E[\tilde Z_j\,\Delta_j(u;X_j)]\Big)X_j,
+\label{eq:r_shape_def}
+\end{align}
+the parts of the composition and re-ranking terms that are not predicted by the instrument.
+Since these are projections, these residuals satisfy
+$\E[\tilde Z_j r^{\text{mean}}_j(u)]=\E[\tilde Z_j r^{\text{shape}}_j(u)]=0$ by construction.
+
+As a result, $\E[\tilde Z_j\eta_j(u)]=\E[\tilde Z_j\alpha_j(u)]$, so the IV moment condition
+$\E[\tilde Z_j\eta_j(u)]=0$ is equivalent to,
+\begin{equation}\label{eq:iv_exogeneity_alpha}
+\E[\tilde Z_j\alpha_j(u)]=0.
+\end{equation}
+In other words, the instrument may induce changes in workforce composition $\bar W_j(X_j)$ and in re-ranking $\Delta_j(u;X_j)$---these are precisely the equilibrium channels captured by \eqref{eq:beta-iv-decomp}---and validity hinges only on the standard restriction that $Z_j$ is orthogonal to the latent group component $\alpha_j(u)$. Moreover, any instrument valid for the individual-level model is also valid for the group-level model, and vice versa.
+
+
+\section{Proofs}\label{sec:proofs_appendix}
+
+\begin{proposition}[Fr\'echet characterization of the IV-weighted quantile function]\label{prop:frechet_equiv}
+Under Assumptions~\ref{ass:instrument_exogeneity}--\ref{asspt:finite_moments}, the IV-weighted mean quantile curve $\psi_x(u) = \E[s(Z,x) Q_Y(u)]$ is the minimizer of the IV-weighted Fr\'echet functional:
+\[
+\psi_x = \argmin_{w \in \calP} \E\!\left[s(Z,x)\, W_2^2(Y, w)\right].
+\]
+\end{proposition}
+
+\begin{proof}
+Using the quantile representation of the 2-Wasserstein distance, $W_2^2(\mu,\nu) = \int_0^1 (Q_\mu(u) - Q_\nu(u))^2\, du$, the IV-weighted Fr\'echet functional at candidate $w$ is
+\begin{align*}
+\E\!\left[s(Z,x)\, W_2^2(Y, w)\right]
+&= \E\!\left[s(Z,x) \int_{(0,1)} \big(Q_Y(u) - Q_w(u)\big)^2\, du\right].
+\end{align*}
+By Fubini--Tonelli (applicable since $\E[|s(Z,x)| \sup_u Q_Y(u)^2] < \infty$ by Assumption~\ref{asspt:finite_moments} and the bound $|s(Z,x)| \lesssim 1 + \|Z\|$), we can exchange the order of integration:
+\begin{align*}
+&= \int_{(0,1)} \E\!\left[s(Z,x)\big(Q_Y(u)^2 - 2 Q_Y(u) Q_w(u) + Q_w(u)^2\big)\right] du \\
+&= \int_{(0,1)} \left\{\E[s(Z,x) Q_Y(u)^2] - 2 Q_w(u)\, \psi_x(u) + Q_w(u)^2\right\} du,
+\end{align*}
+where we used $\E[s(Z,x)] = 1$ (shown in the proof of Lemma~\ref{lem:identification_FIVR}) and $\psi_x(u) = \E[s(Z,x) Q_Y(u)]$. Completing the square:
+\begin{align*}
+&= \underbrace{\int_{(0,1)} \left\{\E[s(Z,x) Q_Y(u)^2] - \psi_x(u)^2\right\} du}_{=:\, C(x),\;\text{does not depend on }w} + \int_{(0,1)} \big(Q_w(u) - \psi_x(u)\big)^2\, du.
+\end{align*}
+The first term $C(x)$ is an IV-weighted variance that does not depend on $w$, so the minimizer over $w$ minimizes $\|Q_w - \psi_x\|_{L^2}^2$. If $\psi_x$ is itself a valid quantile function (i.e., non-decreasing), then $Q_w = \psi_x$ achieves zero, and $\psi_x$ is the unique minimizer.
+\end{proof}
+
+\begin{proof}[Proof of Lemma \ref{lem:identification_FIVR}]
+
+By Assumption \ref{ass:instrument_exogeneity} (\( \E[\tilde{Z}_j \eta_j(u)] = 0 \)) and Assumption \ref{ass:full_rank} (\( \Sigma_{ZZ} \) positive definite, \( \Sigma_{ZX} \) full column rank), compute,
+\[
+\psi_x(u) = \E[s(Z_j, x) Q_{Y_j}(u)] = \beta_0(u) \E[s(Z_j, x)] + \beta_1(u)^{\!\T} \E[s(Z_j, x) (X_j - \mu_X)] + \E[s(Z_j, x) \eta_j(u)].
+\]
+We evaluate each term in turn.
+\begin{enumerate}
+\item Since \( \E[\tilde{Z}_j] = 0 \), we have \( \E[s(Z_j, x)] = 1 \).
+
+ \item For the second term,
+  \[
+  \E[s(Z_j, x) (X_j - \mu_X)] = (x - \mu_X)^{\!\T} (\Sigma_{ZX}^{\!\T} \Sigma_{ZZ}^{-1} \Sigma_{ZX})^{-1} \Sigma_{ZX}^{\!\T} \Sigma_{ZZ}^{-1} \E[\tilde{Z}_j (X_j - \mu_X)] = x - \mu_X,
+  \]
+  as \( \E[\tilde{Z}_j (X_j - \mu_X)] = \Sigma_{ZX} \) and \( (\Sigma_{ZX}^{\!\T} \Sigma_{ZZ}^{-1} \Sigma_{ZX})^{-1} \Sigma_{ZX}^{\!\T} \Sigma_{ZZ}^{-1} \Sigma_{ZX} = I_p \).
+\item For the third term, \( \E[s(Z_j, x) \eta_j(u)] = \E[\eta_j(u)] + (x - \mu_X)^{\!\T} (\dots) \E[\tilde{Z}_j \eta_j(u)] = 0 \), since \( \E[\eta_j(u)] = 0 \) and \( \E[\tilde{Z}_j \eta_j(u)] = 0 \).
+\end{enumerate}
+As a result, 
+\[
+\psi_x(u) = \beta_0(u) + \beta_1(u)^{\!\T} (x - \mu_X) = q(x, u).
+\]
+Since \( q(x, u) \) is non-decreasing in \( u \) by construction, $\psi_x(\cdot) = q(x, \cdot)$ is a valid quantile function for all $x \in \mathcal{X}$.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:pw_ols_improvement}]
+Let $b = (b_0, b_1)$ be any reference coefficients such that $q_b(X_j, \cdot) := b_0(\cdot) + b_1(\cdot)^{\!\T}(X_j - \hat{\mu}_X) \in \mathcal{Q}$ for all $j = 1, \ldots, n$.
+
+\medskip
+Since $q_b(X_j, \cdot) \in \mathcal{Q}$ for each $j$, Lemma~\ref{lemma:improvement} with $p = 2$ gives
+\[
+\int_0^1 \big|\hat{Q}(X_j, u) - q_b(X_j, u)\big|^2\, \dd u \;\leq\; \int_0^1 \big|\hat{\psi}_{X_j}(u) - q_b(X_j, u)\big|^2\, \dd u.
+\]
+
+
+Averaging over $j = 1, \ldots, n$ and exchanging the order of summation and integration:
+\begin{equation}\label{eq:avg_improvement_pf}
+\int_0^1 \frac{1}{n}\sum_{j=1}^n \big|\hat{Q}(X_j, u) - q_b(X_j, u)\big|^2\, \dd u \;\leq\; \int_0^1 \frac{1}{n}\sum_{j=1}^n \big|\hat{\psi}_{X_j}(u) - q_b(X_j, u)\big|^2\, \dd u.
+\end{equation}
+
+
+Fix $u \in [0,1]$. Let $\hat{\mathbf{X}}$ denote the $n \times (p+1)$ design matrix with $j$-th row $(1,\; (X_j - \hat{\mu}_X)^{\!\T})$. The \est coefficients are defined by $\hat{\beta}^{\est}(u) = (\hat{\mathbf{X}}^{\!\T}\hat{\mathbf{X}})^{-1}\hat{\mathbf{X}}^{\!\T} \hat{Q}(u)$, where $\hat{Q}(u) = (\hat{Q}(X_1,u),\ldots,\hat{Q}(X_n,u))^{\!\T}$. Write the OLS fitted values as $\hat{q}^{\est}(X_j, u) = \hat{\beta}_0^{\est}(u) + \hat{\beta}_1^{\est}(u)^{\!\T}(X_j - \hat{\mu}_X)$ and the residuals as $e_j(u) = \hat{Q}(X_j, u) - \hat{q}^{\est}(X_j, u)$.
+
+Both $\hat{q}^{\est}(X_j, u)$ and $q_b(X_j, u)$ are linear in $(1, (X_j - \hat{\mu}_X)^{\!\T})$, so their difference $\hat{q}^{\est}(X_j, u) - q_b(X_j, u)$ lies in the column space of $\hat{\mathbf{X}}$, while $e_j(u)$ lies in its orthogonal complement by the OLS normal equations. The Pythagorean theorem therefore gives
+\begin{equation}\label{eq:pythag_pf}
+\frac{1}{n}\sum_{j=1}^n \big|\hat{Q}(X_j, u) - q_b(X_j, u)\big|^2 = \frac{1}{n}\sum_{j=1}^n \big|\hat{q}^{\est}(X_j, u) - q_b(X_j, u)\big|^2 + \frac{1}{n}\sum_{j=1}^n e_j(u)^2.
+\end{equation}
+
+
+Since $\frac{1}{n}\sum_{j=1}^n (X_j - \hat{\mu}_X) = 0$ by construction,  $\frac{1}{n}\hat{\mathbf{X}}^{\!\T}\hat{\mathbf{X}}$ is block-diagonal,
+\[
+\frac{1}{n}\hat{\mathbf{X}}^{\!\T}\hat{\mathbf{X}} = \begin{pmatrix} 1 & 0^{\!\T} \\ 0 & \hat{\Sigma}_{XX} \end{pmatrix}.
+\]
+Writing $\delta_0(u) = \hat{\beta}_0^{\est}(u) - b_0(u)$ and $\delta_1(u) = \hat{\beta}_1^{\est}(u) - b_1(u)$, the cross term vanishes:
+\begin{align*}
+\frac{1}{n}\sum_{j=1}^n \big|\hat{q}^{\est}(X_j, u) - q_b(X_j, u)\big|^2
+&= \frac{1}{n}\sum_{j=1}^n \big|\delta_0(u) + \delta_1(u)^{\!\T}(X_j - \hat{\mu}_X)\big|^2 \\
+&= \delta_0(u)^2 + 2\,\delta_0(u)\,\delta_1(u)^{\!\T}\underbrace{\frac{1}{n}\sum_{j=1}^n(X_j - \hat{\mu}_X)}_{=\,0} + \delta_1(u)^{\!\T}\hat{\Sigma}_{XX}\,\delta_1(u) \\
+&= \delta_0(u)^2 + \delta_1(u)^{\!\T}\hat{\Sigma}_{XX}\,\delta_1(u).
+\end{align*}
+
+Since $\frac{1}{n}\sum_j e_j(u)^2 \geq 0$, combining~\eqref{eq:pythag_pf} and the above gives, for each $u$,
+\begin{equation}\label{eq:lhs_lower_pf}
+\big|\hat{\beta}_0^{\est}(u) - b_0(u)\big|^2 + \big(\hat{\beta}_1^{\est}(u) - b_1(u)\big)^{\!\T}\hat{\Sigma}_{XX}\big(\hat{\beta}_1^{\est}(u) - b_1(u)\big) \;\leq\; \frac{1}{n}\sum_{j=1}^n \big|\hat{Q}(X_j, u) - q_b(X_j, u)\big|^2.
+\end{equation}
+
+Since $\hat{\psi}_{X_j}(u) = \tilde{\beta}_0(u) + \tilde{\beta}_1(u)^{\!\T}(X_j - \hat{\mu}_X)$ is exactly linear in $\hat{\mathbf{X}}$, regressing $(\hat{\psi}_{X_1}(u), \ldots, \hat{\psi}_{X_n}(u))^{\!\T}$ on $\hat{\mathbf{X}}$ recovers $(\tilde{\beta}_0(u), \tilde{\beta}_1(u))$ with zero residuals. The same block-diagonal expansion therefore gives
+\[
+\frac{1}{n}\sum_{j=1}^n \big|\hat{\psi}_{X_j}(u) - q_b(X_j, u)\big|^2 = \big|\tilde{\beta}_0(u) - b_0(u)\big|^2 + \big(\tilde{\beta}_1(u) - b_1(u)\big)^{\!\T}\hat{\Sigma}_{XX}\big(\tilde{\beta}_1(u) - b_1(u)\big).
+\]
+
+
+To finish, integrate~\eqref{eq:lhs_lower_pf} over $u \in [0,1]$ and apply~\eqref{eq:avg_improvement_pf} to obtain,
+\[
+\|\hat{\beta}_0^{\est} - b_0\|_{L^2}^2 + \|\hat{\beta}_1^{\est} - b_1\|_{\hat{\Sigma}_{XX}, L^2}^2 \;\leq\; \int_0^1 \frac{1}{n}\sum_{j=1}^n \big|\hat{\psi}_{X_j}(u) - q_b(X_j, u)\big|^2\, \dd u = \|\tilde{\beta}_0 - b_0\|_{L^2}^2 + \|\tilde{\beta}_1 - b_1\|_{\hat{\Sigma}_{XX}, L^2}^2,
+\]
+where the equality integrates the previous equation over $u$, which gives Eq.~\eqref{eq:pw_improvement}.
+\end{proof}
+
+
+\begin{proof}[Proof of Proposition \ref{prop:coord_improvement}]
+By FWL, for each $u$ the $k$-th slope coefficient from regressing \[(\hat{Q}(X_1,u),\ldots,\hat{Q}(X_n,u))^{\!\T}\] on $(1_n,C)$ is
+\[
+\hat\beta_{1,k}^{\est}(u)
+=\frac{1}{n\hat v_k}\sum_{j=1}^n r_{jk}\,\hat{Q}(X_j,u).
+\]
+Since $\hat\psi_{X_j}(u)=\tilde\beta_0(u)+(X_j-\hat\mu_X)^{\!\T}\tilde\beta_1(u)$ is exactly linear in $(1_n,C)$, the same identity gives $\tilde\beta_{1,k}(u)=\frac{1}{n\hat v_k}\sum_j r_{jk}\,\hat\psi_{X_j}(u)$, so
+\begin{equation}\label{eq:Delta_k}
+\Delta_k(u):=\hat\beta_{1,k}^{\est}(u)-\tilde\beta_{1,k}(u)=\frac{1}{n\hat v_k}\sum_{j=1}^n r_{jk}\,D_{X_j}(u).
+\end{equation}
+
+Fix $j$ with $r_{jk}\neq 0$. Since $\hat{Q}(X_j,\cdot)=\Pi_{\mathcal Q}(\hat\psi_{X_j})$ is the closest element of $\mathcal Q$ to $\hat\psi_{X_j}$ in $L^2$, it satisfies the first-order condition: for every $h\in\mathcal Q$,
+\[
+\langle D_{X_j},\; h-\hat{Q}(X_j,\cdot)\rangle_{L^2}\ge 0,
+\]
+where remember that $D_{X_j}=\hat{Q}(X_j,\cdot)-\hat\psi_{X_j}$ is the projection correction. Since $q_b(X_j,\cdot)\in\mathcal Q$ by assumption, taking $h=q_b(X_j,\cdot)$:
+\[
+\langle D_{X_j},\; q_b(X_j,\cdot)-\hat{Q}(X_j,\cdot)\rangle_{L^2}\ge 0.
+\]
+Substituting $q_b(X_j,\cdot)-\hat{Q}(X_j,\cdot)=-e_{jk}-r_{jk}(\tilde\beta_{1,k}-b_{1,k})-D_{X_j}$ from~\eqref{eq:decomp_identity}:
+\begin{equation}\label{eq:vi_unconditional}
+r_{jk}\,\langle D_{X_j},\,\tilde\beta_{1,k}-b_{1,k}\rangle_{L^2}
+\;\le\;
+-\|D_{X_j}\|_{L^2}^2 - \langle D_{X_j},\,e_{jk}\rangle_{L^2}.
+\end{equation}
+Summing over $j$ with $r_{jk}\neq 0$, dividing by $n\hat v_k$, and noting that $\tilde\beta_{1,k}-b_{1,k}$ does not depend on $j$:
+\[
+\Big\langle \frac{1}{n\hat v_k}\sum_{j:\,r_{jk}\neq 0} r_{jk}\,D_{X_j},\;\tilde\beta_{1,k}-b_{1,k}\Big\rangle_{L^2}
+\;\le\;
+-\frac{1}{n\hat v_k}\sum_{j:\,r_{jk}\neq 0}\|D_{X_j}\|_{L^2}^2
+-\frac{1}{n\hat v_k}\sum_{j:\,r_{jk}\neq 0}\langle D_{X_j},\,e_{jk}\rangle_{L^2}.
+\]
+By~\eqref{eq:Delta_k}, the left-hand side equals $\langle\Delta_k,\,\tilde\beta_{1,k}-b_{1,k}\rangle_{L^2}$, giving~\eqref{eq:crossterm_general}.
+\begin{equation}\label{eq:crossterm_general}
+\langle\tilde\beta_{1,k}-b_{1,k},\;\Delta_k\rangle_{L^2}
+\;\le\;
+-\frac{1}{n\hat v_k}\sum_{j\in J_k}\|D_{X_j}\|_{L^2}^2
+-\frac{1}{n\hat v_k}\sum_{j\in J_k}\langle D_{X_j},\,e_{jk}\rangle_{L^2}.
+\end{equation}
+By Cauchy--Schwarz applied to~\eqref{eq:Delta_k} and the definition of $\hat v_k :=  \frac1n \sum_{i=1}^\n r_{jk}^2$:
+\begin{equation}\label{eq:norm_bound}
+\|\Delta_k\|_{L^2}^2\;\le\;\frac{1}{n\hat v_k}\sum_{j\in J_k}\|D_{X_j}\|_{L^2}^2.
+\end{equation}
+Since $\hat\beta_{1,k}^{\est} - b_{1,k} = (\tilde\beta_{1,k} - b_{1,k}) + \Delta_k$, expanding the squared norm gives
+\[
+\|\hat\beta_{1,k}^{\est}-b_{1,k}\|_{L^2}^2
+= \|\tilde\beta_{1,k}-b_{1,k}\|_{L^2}^2
++ 2\langle\tilde\beta_{1,k}-b_{1,k},\,\Delta_k\rangle_{L^2}
++ \|\Delta_k\|_{L^2}^2.
+\]
+Substituting the bounds~\eqref{eq:crossterm_general} and~\eqref{eq:norm_bound} on the cross-term and the squared correction yields~\eqref{eq:coord_bound_general}.
+\end{proof}
+
+\begin{proof}[Proof of Corollary \ref{cor:coord_sufficient}]
+Under~\eqref{eq:Ak_feas}, the point $q_b(X_j,\cdot)+e_{jk}(\cdot)=\hat\psi_{X_j}(\cdot)+r_{jk}(b_{1,k}(\cdot)-\tilde\beta_{1,k}(\cdot))\in\mathcal Q$ (by~\eqref{eq:decomp_identity}) provides a tighter feasible point in the variational inequality, yielding
+\[
+r_{jk}\langle D_{X_j},\,\tilde\beta_{1,k}-b_{1,k}\rangle_{L^2}
+\;\le\;
+-\|D_{X_j}\|_{L^2}^2
+\]
+without the $\langle D_{X_j}, e_{jk}\rangle$ term. The rest follows as in the proof of Proposition~\ref{prop:coord_improvement}.
+\end{proof}
+
+\begin{lemma}[Local smoothness of weights]\label{lem:smooth_g_from_fullrank}
+Let $\theta=(\mu_X,\mu_Z,\Sigma_{ZZ},\Sigma_{ZX})$ and
+\[
+g(\theta,Z)\;=\;1+(x-\mu_X)^{\!\top}
+\Big(\Sigma_{ZX}^{\!\top}\Sigma_{ZZ}^{-1}\Sigma_{ZX}\Big)^{-1}
+\Sigma_{ZX}^{\!\top}\Sigma_{ZZ}^{-1}(Z-\mu_Z).
+\]
+If Assumption~\ref{ass:full_rank} holds at $\theta_0$, then there exists an open neighborhood $\mathcal N$ of $\theta_0$ such that:
+\begin{enumerate}[(i)]
+\item $\Sigma_{ZZ}(\theta)$ and $A(\theta):=\Sigma_{ZX}(\theta)^{\!\top}\Sigma_{ZZ}(\theta)^{-1}\Sigma_{ZX}(\theta)$ are invertible for all $\theta\in\mathcal N$;
+\item for each fixed $Z$, the map $\theta\mapsto g(\theta,Z)$ is $C^2$ on $\mathcal N$;
+\item for any compact $\mathcal K\subset\mathcal N$ there exist constants $C_0,C_1<\infty$ such that
+\[
+\sup_{\theta\in\mathcal K}\big\|\nabla^2_{\theta\theta} g(\theta,Z)\big\|
+\;\le\; C_0+C_1\|Z\|\qquad\text{for all $Z$.}
+\]
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+Since $\Sigma_{ZZ}(\theta_0)$ is p.d.\ and $A(\theta_0)$ is p.d.\ by Assumption~\ref{ass:full_rank}, and eigenvalues depend continuously on matrix entries, there is an open neighborhood $\mathcal N$ of $\theta_0$ on which both matrices remain invertible, proving (i). 
+
+The maps $\theta\mapsto \Sigma_{ZZ}(\theta)$ and $\theta\mapsto \Sigma_{ZX}(\theta)$ are affine in the components of $\theta$. Matrix addition and multiplication preserve smoothness of the entries, and inversion is smooth on the set of nonsingular square matrices. Therefore $\theta\mapsto g(\theta,Z)$ is a composition of smooth maps on $\mathcal N$, hence $C^2$, proving (ii).
+
+Finally, write $g(\theta,Z)=a(\theta)+b(\theta)^{\!\top}Z$. By (ii), $a$ and $b$ are $C^2$ on $\mathcal N$, so on any compact $\mathcal K\subset\mathcal N$ the quantities
+\[
+M_0:=\sup_{\theta\in\mathcal K}\big\|\nabla^2 a(\theta)\big\|,
+\qquad
+M_1:=\sup_{k}\sup_{\theta\in\mathcal K}\big\|\nabla^2 b_k(\theta)\big\|
+\]
+are finite. Since $\nabla^2 g(\theta,Z)=\nabla^2 a(\theta)+\sum_l Z_l\,\nabla^2 b_l(\theta)$, we have
+\[
+\big\|\nabla^2 g(\theta,Z)\big\|
+\le M_0+M_1\sum_l |Z_l|
+\le M_0+\sqrt{d}\,M_1\,\|Z\|,
+\]
+where $d=\dim(Z)$. Setting $C_0=M_0$ and $C_1=\sqrt{d}\,M_1$ yields (iii).
+\end{proof}
+
+\begin{lemma}[VC-subgraph for the weighted quantile class]\label{lem:VCproduct}
+Let $\mathcal{Q}=\{y\mapsto Q_y(u): u\in[a,b]\}$ on $\mathcal{Y}$ be VC-subgraph and let $s_x:\mathcal{Z}\to\mathbb{R}$ be a fixed measurable function $z\mapsto s(z,x)$. For a given $x$, define the class on $\mathcal{Y}\times\mathcal{Z}$,
+\[
+\mathcal{S}\;=\;\big\{(y,z)\mapsto s(z,x)\,Q_y(u):\ u\in[a,b]\big\}.
+\]
+Then $\mathcal{S}$ is VC-subgraph. As a result, $\mathcal{S}$ satisfies the uniform entropy bound (2.5.1) of \citet{vaart1996weak} with envelope
+$H(y,z)=|s(z,x)|\,\sup_{u\in[a,b]}|Q_y(u)|$.
+\end{lemma}
+
+
+
+\begin{proof}
+Define $\widetilde{\mathcal{Q}}=\{(y,z)\mapsto Q_y(u): u\in[a,b]\}$ on $\mathcal{Y}\times\mathcal{Z}$ and the fixed function $\tilde s(y,z)=s(z,x)$. As shown in \citet[Lemma A-3]{van2025regression}, $\mathcal{Q}$ is VC-subgraph on $\mathcal{Y}$. Hence, the lifted class $\widetilde{\mathcal{Q}}$ is VC-subgraph on $\mathcal{Y}\times\mathcal{Z}$. To see this, note that the composition of $\widetilde{\mathcal{Q}}$ and the fixed projection $(y,z)\mapsto y$ preserves the VC-subgraph property by \citet[Lemma~2.6.18(vii)]{vaart1996weak}. Further, by \citet[Lemma~2.6.18(vi)]{vaart1996weak}, the product of $\widetilde{\mathcal{Q}}$ and the fixed function $(z,y) \to \tilde{s}(y, z)$ is VC-subgraph. VC-subgraph classes satisfy the uniform entropy bound in \citet[Eq. 2.6.7]{vaart1996weak}  with respect to the $L_2(P)$-metric for every $P$. The stated envelope follows directly.
+\end{proof}
+
+
+\begin{proof}[Proof of Theorem~\ref{thm:convergence_unprojected}]
+Let
+\[
+\hat\psi_x(u)=\frac{1}{n}\sum_{j=1}^n \hat s_j(x)\,Q_{Y_j}(u),
+\qquad
+\psi_x(u)=\E\!\big[s(Z,x)Q_Y(u)\big],
+\]
+where $\hat s_j(x)=g(\hat\theta,Z_j)$ and $s(Z,x)=g(\theta_0,Z)$. 
+
+Write
+\[
+\sqrt{n}\big(\hat\psi_x(u)-\psi_x(u)\big)
+=\underbrace{\frac{1}{\sqrt{n}}\sum_{j=1}^n \Big(s(Z_j,x)Q_{Y_j}(u)-\psi_x(u)\Big)}_{(A)}
++\underbrace{\frac{1}{\sqrt{n}}\sum_{j=1}^n \big(\hat s_j(x)-s(Z_j,x)\big)Q_{Y_j}(u)}_{(B)}.
+\]
+
+\textit{Main term  (A).}
+Consider $\mathcal{F}=\{(Y,Z)\mapsto s(Z,x)Q_Y(u)-\psi_x(u):u\in[a,b]\}$. 
+Recall from Lemma \ref{lem:VCproduct} that
+\[
+\mathcal{F}_Y
+\;=\;
+\big\{\,y\mapsto Q_y(u):\ u\in[a,b]\,\big\}
+\]
+is a VC–subgraph class on $\mathcal{Y}$ with envelope
+$F_Y(y)=\sup_{u\in[a,b]}|Q_y(u)|$.  
+For each fixed $x$, write $s_x(z)=s(z,x)$ and define the class on $\mathcal{Y}\times\mathcal{Z}$,
+\[
+\mathcal{S}
+\;=\;
+\big\{(y,z)\mapsto s_x(z)\,Q_y(u):\ u\in[a,b]\big\}.
+\]
+By Lemma~\ref{lem:VCproduct},
+$\mathcal{S}$ is VC–subgraph with envelope
+\[
+H(y,z) = |s_x(z)|\,F_Y(y) \ \lesssim\ (1+\|z\|)\,\sup_{u\in[a,b]}|Q_y(u)|.
+\]
+By Assumption~\ref{asspt:finite_moments}, $\E[\|Z\|^{4}]<\infty$ and $\sup_{u\in[a,b]}\E[|Q_Y(u)|^{4}]<\infty$, so in particular
+\[
+P^* H^2
+\ \le\ 
+\big(\E[ (1+\|Z\|)^4 ]\big)^{1/2}
+\big(\E[ (\sup_{u}|Q_Y(u)|)^4 ]\big)^{1/2}
+<\infty.
+\]
+Therefore, by Theorem~2.5.2 of \citet{vaart1996weak}, $\mathcal{S}$ is $P$–Donsker and
+\[
+(A)\ \Rightarrow\ \mathbb{G}_1\quad\text{in }\ell^\infty([a,b]),
+\]
+a tight mean-zero Gaussian process with covariance 
+$\Cov(s(Z,x)Q_Y(u),\,s(Z,x)Q_Y(u'))$.
+
+
+\textit{Empirical weights term (B).}
+By Lemma~\ref{lem:smooth_g_from_fullrank}, a second-order expansion gives
+\[
+\hat s_j(x)-s(Z_j,x)
+=\nabla_\theta s(\theta_0,Z_j)^\top(\hat\theta-\theta_0)+R_j,
+\quad
+|R_j|\ \le\ C(1+\|Z_j\|)\,\|\hat\theta-\theta_0\|^2.
+\]
+Hence, uniformly in $u$,
+\[
+\Big|\frac{1}{\sqrt{n}}\sum_{j=1}^n R_j\,Q_{Y_j}(u)\Big|
+\ \le\ \sqrt{n}\,\|\hat\theta-\theta_0\|^2\;\frac{1}{n}\sum_{j=1}^n (1+\|Z_j\|)\sup_{u\in[a,b]}|Q_{Y_j}(u)|
+\ =\ o_p(1),
+\]
+by the LLN and $\sqrt{n}\|\hat\theta-\theta_0\|^2=o_p(1)$. Therefore
+\[
+(B)\ =\ \Big[\mathbb{P}_n f_u\Big]\ \sqrt{n}(\hat\theta-\theta_0)\ +\ o_p(1),
+\qquad
+f_u(Y,Z):=Q_Y(u)\,\nabla_\theta s(\theta_0,Z)^\top.
+\]
+By Lemma~\ref{lem:VCproduct}, the class $\{f_u:u\in[a,b]\}$ is VC-subgraph with envelope
+$F(Y,Z)\lesssim (1+\|Z\|)\sup_{u\in[a,b]}|Q_Y(u)|\in L^1$, hence
+$\sup_{u\in[a,b]}|\mathbb{P}_n f_u-\partial_\theta\psi_x(u)^\top|\to_p 0$.
+
+
+\textit{Joint convergence and covariance.}
+Let
+\[
+m(W) = \big(Z-\mu_Z,\ X-\mu_X,\ (Z-\mu_Z)(Z-\mu_Z)^\top - \Sigma_{ZZ},\ (Z-\mu_Z)(X-\mu_X)^\top - \Sigma_{ZX}\big)
+\]
+and $\mathcal{G}_\theta=\{m_k:k=1,\dots,d\}$ with $d=\dim\theta$.
+Since $\mathcal{G}_\theta$ is finite and square-integrable, it is $P$--Donsker.
+We have shown $\mathcal{S}$ is $P$--Donsker. Let $H$ and $G(W):=\max_k |m_k(W)|$ be envelopes for $\mathcal{S}$
+and $\mathcal{G}_\theta$, respectively. Under Assumption~\ref{asspt:finite_moments}, $PH^2<\infty$ and $PG^2<\infty$,
+so the union $\mathcal{J}=\mathcal{S}\cup\mathcal{G}_\theta$ has square-integrable envelope $J:=H+G$
+and hence $\|P\|_{\mathcal{J}}<\infty$.
+By \citet[Example~2.10.7]{vaart1996weak}, $\mathcal{J}$ is $P$--Donsker and therefore
+\[
+\Big(\ (A),\ \sqrt{n}(\hat\theta-\theta_0)\ \Big)\ \Rightarrow\ \big(\mathbb{G}_1,\ \mathbb{Z}_\theta\big)
+\quad\text{in } \ell^\infty([a,b])\times\R^d,
+\]
+with $\mathbb{G}_1$ as above and $\mathbb{Z}_\theta\sim N(0,\Sigma)$.
+The mapping $(h,z)\mapsto h(\cdot)+\partial_\theta\psi_x(\cdot)^\top z$
+is continuous $\ell^\infty([a,b])\times\R^d\to\ell^\infty([a,b])$ and
+$\sup_u|\mathbb{P}_n f_u-\partial_\theta\psi_x(u)^\top|\to_p0$,
+so by the continuous mapping theorem,
+\[
+\sqrt{n}(\hat\psi_x-\psi_x)\ =\ (A)+(B)\ \Rightarrow\
+\mathbb{G}_1+\partial_\theta\psi_x(\cdot)^\top\,\mathbb{Z}_\theta
+\quad\text{in } \ell^\infty([a,b]).
+\]
+The covariance kernel follows from the joint Gaussian limit and this linear mapping.
+\end{proof}
+
+ \begin{lemma}[Continuity of the covariance kernel] \label{lem:Gamma-cont-strong}
+Let $\phi_u = s(Z,x)\,\xi(u)$ with $s(Z,x)$ as in Section~\ref{sec:covariance_derivation} and
+\[
+\Gamma(u,u') \;:=\; \E\!\big[\phi_u\,\phi_{u'}\big] \;=\; \E\!\big[s(Z,x)^2\,\xi(u)\,\xi(u')\big].
+\]
+Define the weighted inner product $\langle f,g\rangle_s:=\E[s(Z,x)^2 f g]$ and norm
+$\|f\|_{s}:=\langle f,f\rangle_s^{1/2}$ on $L^2(P)$.
+Under Assumptions~\ref{ass:instrument_exogeneity}--\ref{asspt:finite_moments}, the intrinsic variance metric of the limiting process in Theorem \ref{thm:convergence_unprojected} satisfies,
+\[
+\rho(u,u')^2 \;=\; \E\!\big[(\mathbb{G}(u)-\mathbb{G}(u'))^2\big]
+\;=\;\|\xi(u)-\xi(u')\|_{s}^2 \;\longrightarrow\; 0
+\quad\text{as }|u-u'|\to0,
+\]
+so $\mathbb{G}$ is mean-square (hence stochastically) continuous on $[a,b]$.
+\end{lemma}
+
+\begin{proof}
+Since $Q_Y(\cdot)$ is nondecreasing and left-continuous, $Q_Y(u_n)\to Q_Y(u)$ a.s.\ as $u_n\to u$. Moreover, $(Q_Y(u_n)-Q_Y(u))^2\le 4\sup_{t\in[a,b]}|Q_Y(t)|^2$ with $\E[\sup_t|Q_Y(t)|^4]<\infty$ by Assumption~\ref{asspt:finite_moments}. By dominated convergence, $\E[(Q_Y(u_n)-Q_Y(u))^2]\to0$.
+
+The IV projection coefficients equal $\beta^{\text{unc}}(u) = (\beta_0^{\text{unc}}(u),\beta_1^{\text{unc}}(u)^{\!\T})^{\!\T}=\bar{S}_{\mathrm{2SLS}}\,\E[\mathbf{Z}Q_Y(u)]$ with $\bar{S}_{\mathrm{2SLS}}$ as in Theorem~\ref{thm:convergence_beta}. By the above and dominated convergence (using $\E\|\mathbf{Z}\|^2<\infty$), $u\mapsto\E[\mathbf{Z}Q_Y(u)]$ is continuous, hence so is $u\mapsto\beta^{\text{unc}}(u)$. On compact $[a,b]$, $\sup_u\|\beta^{\text{unc}}(u)\|<\infty$ by continuity, from the extreme value theorem.
+
+Then, by the triangle inequality and Cauchy--Bunyakovsky--Schwarz,
+\begin{align*}
+|\xi(u_n)-\xi(u)| & = \big| [Q_Y(u_n) - Q_Y(u)] - \mathbf{X}^\top [\beta^{\text{unc}}(u_n) - \beta^{\text{unc}}(u)] \big| \\
+& \leq |Q_Y(u_n) - Q_Y(u)| + \|\mathbf{X}\| \|\beta^{\text{unc}}(u_n) - \beta^{\text{unc}}(u)\|.
+\end{align*}
+Squaring both sides and using $(a + b)^2 \leq 2a^2 + 2b^2$ (for $a, b \geq 0$) yields
+\[
+[\xi(u_n) - \xi(u)]^2 \leq 2 [Q_Y(u_n) - Q_Y(u)]^2 + 2 \|\mathbf{X}\|^2 \|\beta^{\text{unc}}(u_n) - \beta^{\text{unc}}(u)\|^2.
+\]
+Multiplying through by $s(Z,x)^2 \geq 0$ preserves the inequality:
+\[
+s(Z,x)^2 [\xi(u_n) - \xi(u)]^2 \leq 2 s(Z,x)^2 [Q_Y(u_n) - Q_Y(u)]^2 + 2 s(Z,x)^2 \|\mathbf{X}\|^2 \|\beta^{\text{unc}}(u_n) - \beta^{\text{unc}}(u)\|^2.
+\]
+Taking expectations (which is monotone for nonnegative random variables) and noting that $\E[s(Z,x)^2 [\xi(u_n) - \xi(u)]^2] = \|\xi(u_n) - \xi(u)\|_s^2$ and $\|\beta^{\text{unc}}(u_n) - \beta^{\text{unc}}(u)\|^2$ is deterministic gives
+\[
+\|\xi(u_n)-\xi(u)\|_{s}^2\le2\E[s^2(Q_Y(u_n)-Q_Y(u))^2]+2\|\beta^{\text{unc}}(u_n)-\beta^{\text{unc}}(u)\|^2\E[s^2\|\mathbf{X}\|^2].
+\]
+The second term vanishes as $u_n\to u$ since $\beta^{\text{unc}}(\cdot)$ is continuous and $\E[s^2\|\mathbf{X}\|^2]<\infty$ by Assumption \ref{asspt:finite_moments}. For the first term, $(Q_Y(u_n)-Q_Y(u))^2\to0$ a.s.\ and $s^2(Q_Y(u_n)-Q_Y(u))^2\le4s^2\sup_t|Q_Y(t)|^2$ with $\E[s^2\sup_t|Q_Y(t)|^2]<\infty$ (by Cauchy-Bunyakovsky-Schwarz, since $\E[s^4]<\infty$ via $s\lesssim1+\|Z\|$ and $\E\|Z\|^4<\infty$, plus $\E[\sup_t|Q_Y(t)|^4]<\infty$). Dominated convergence yields $\E[s^2(Q_Y(u_n)-Q_Y(u))^2]\to0$. Hence $\|\xi(u_n)-\xi(u)\|_s\to0$.
+
+Finally, $\Gamma(u,u')=\langle\xi(u),\xi(u')\rangle_s$. The bilinear $\langle\cdot,\cdot\rangle_s$ is continuous on $L^2_s\times L^2_s$, and $(u,u')\mapsto(\xi(u),\xi(u'))$ is continuous in the product norm, so $\Gamma$ is jointly continuous.
+
+Finally, $\rho(u,u')^2=\Gamma(u,u)+\Gamma(u',u')-2\Gamma(u,u')=\|\xi(u)-\xi(u')\|_s^2\to0$ as $|u-u'|\to0$, which proves mean-square continuity.
+\end{proof}
+
+\begin{corollary}\label{cor:cont-version}
+The centered tight Gaussian limit process $\mathbb G$ in Theorem~\ref{thm:convergence_unprojected}
+admits a modification with a.s.\ continuous sample paths on $[a,b]$.
+In what follows we replace $\mathbb G$ by this continuous modification, so that $\mathbb G\in C([a,b])$ a.s.
+\end{corollary}
+
+\begin{proof}
+Let $\rho$ be the canonical semimetric of $\mathbb G$,
+\[
+\rho(u,u')^2 := \E\!\big[(\mathbb G(u)-\mathbb G(u'))^2\big],\qquad u,u'\in[a,b].
+\]
+By Lemma~\ref{lem:Gamma-cont-strong}, $\rho(u_n,u)\to0$ whenever $|u_n-u|\to0$.
+Since $[a,b]$ is compact, this implies that $([a,b],\rho)$ is totally bounded: for any $\varepsilon>0$
+choose $\delta>0$ such that $|u-u'|<\delta\Rightarrow \rho(u,u')<\varepsilon$, and cover $[a,b]$ by finitely many
+$\delta$-intervals.
+
+Moreover, $\mathbb G$ is a tight Borel measurable random element of $\ell^\infty([a,b])$
+(it is the weak limit in Theorem~\ref{thm:convergence_unprojected}$)$ and is stochastically continuous with
+respect to $\rho$ (indeed mean-square continuity implies stochastic continuity).
+By Addendum~1.5.8 of \citet{vaart1996weak}, $\mathbb G$ admits a modification whose sample paths are a.s.\ uniformly
+$\rho$-continuous on $[a,b]$.
+For this modification, if $u_n\to u$ in the usual metric then $\rho(u_n,u)\to0$ and hence $\mathbb G(u_n)\to \mathbb G(u)$.
+Therefore its sample paths are a.s.\ continuous on $[a,b]$, i.e.\ $\mathbb G\in C([a,b])$ a.s.\ after replacement.
+\end{proof}
+
+
+\begin{proof}[Proof of Theorem~\ref{thm:convergence_projected}]
+The structure of this proof is analogous to the proof of Theorem 4 in \citet{van2025regression}. Recall from Theorem~\ref{thm:convergence_unprojected} that
+\[
+\sqrt{n}\,\big(\hat\psi_x-\psi_x\big)\ \Rightarrow\ \mathbb{G}
+\qquad\text{in }\ell^\infty([a,b]).
+\]
+By Corollary~\ref{cor:cont-version}, we may (and do) replace $\mathbb G$ by a modification such that
+$\mathbb G\in C([a,b])$ a.s.
+
+
+All Fr\'echet objectives and $W_2$ distances are $L^2$-integrals of quantile functions. Hence changing
+representatives on null sets (e.g.\ switching from left- to right-continuous versions) does not alter the
+objective nor its argmin. We can therefore compute the $L^2([a,b])$ projection and then select a
+right-continuous representative, to view the result as an element of $\ell^\infty([a,b])$.
+
+As before, let
+\[
+\hat q(x,\cdot):=\Pi_{\mathcal Q}(\hat\psi_x),
+\qquad
+q(x,\cdot):=\Pi_{\mathcal Q}(\psi_x),
+\]
+so that $\hat q(x,\cdot)=\hat Q_{m_{\est}(x)}(\cdot)$ and $q(x,\cdot)$ is the population
+target quantile function. Then, the result follows in three steps. 
+
+\smallskip
+\noindent\textit{Step 1 (Lipschitzness and uniform consistency).}
+By Lemma~\ref{lem:projection_properties}(iii), $\Pi_{\mathcal Q}$ is $1$--Lipschitz in the uniform norm:
+\[
+\|\Pi_{\mathcal Q}(f)-\Pi_{\mathcal Q}(g)\|_\infty
+\le \|f-g\|_\infty
+\qquad\forall f,g\in\ell^\infty([a,b]).
+\]
+Therefore,
+\[
+\|\hat q(x,\cdot)-q(x,\cdot)\|_\infty
+\le \|\hat\psi_x-\psi_x\|_\infty
+=o_p(1).
+\]
+
+\smallskip
+\noindent\textit{Step 2 (Local differentiability and identity derivative under strict increase).}
+Under Assumption \ref{asspt:average_strictness}, $\psi_x$ is strictly increasing on $[a,b]$.
+Then $\psi_x\in\mathcal Q$, so $q(x,\cdot)=\Pi_{\mathcal Q}(\psi_x)=\psi_x$.
+Moreover, by Lemma~\ref{lem:iso-hadamard} under strict increasingness, $\Pi_{\mathcal Q}$ is Hadamard
+directionally differentiable at $\psi_x$ as a mapping from $l^\infty([a,b])$ to $l^\infty([a,b])$ tangentially to $C([a,b])$, with derivative equal to the identity:
+\[
+D\Pi_{\mathcal Q}[\psi_x](h)=h
+\qquad\forall\,h\in C([a,b]).
+\]
+
+\smallskip
+\noindent\textit{Step 3 (Functional delta method).}
+Since $\sqrt n(\hat\psi_x-\psi_x)\Rightarrow \mathbb G$ in $\ell^\infty([a,b])$ by Theorem \ref{thm:convergence_unprojected} and the limit satisfies
+$\mathbb G\in C([a,b])$ a.s. by Corollary \ref{cor:cont-version}, the functional delta method for Hadamard directionally differentiable maps
+\citep[Thm.~20.8]{van2000asymptotic}, applied tangentially to $C([a,b])$, yields
+\[
+\sqrt{n}\,\big(\hat q(x,\cdot)-q(x,\cdot)\big)
+=
+\sqrt{n}\,\Big(\Pi_{\mathcal Q}(\hat\psi_x)-\Pi_{\mathcal Q}(\psi_x)\Big)
+\ \Rightarrow\
+D\Pi_{\mathcal Q}[\psi_x](\mathbb{G})
+=
+\mathbb{G}
+\qquad\text{in }\ell^\infty([a,b])
+\]
+which gives the result.
+\end{proof}
+
+
+
+
+\begin{proof}[Proof of Theorem~\ref{thm:convergence_beta}]
+The unconstrained 2SLS estimator $\tilde{\beta}(u)$ is a continuous linear functional of the empirical process. By the algebraic structure of the IV weights, the unprojected weighted average quantile curve is linear in $x$:
+\begin{equation}\label{eq:psi_linear}
+\hat{\psi}_x(u) = \tilde{\beta}_0(u) + \tilde{\beta}_1(u)^{\T}(x - \hat{\mu}_X),
+\end{equation}
+so $\tilde{\beta}(u) = \bar{S}_{\mathrm{2SLS},n} \frac{1}{n}\sum_{j=1}^n \mathbf{Z}_j Q_{Y_j}(u)$, where $\bar{S}_{\mathrm{2SLS},n}$ is the sample analogue of $\bar{S}_{\mathrm{2SLS}}$.
+
+The class $\{(y,z) \mapsto \mathbf{z}\, Q_y(u) : u \in [a,b]\}$ is $P$--Donsker by the VC-subgraph argument in the proof of Theorem~\ref{thm:convergence_unprojected} (Lemma~\ref{lem:VCproduct} and the envelope square-integrability check). Therefore $\frac{1}{\sqrt{n}}\sum_{j=1}^n (\mathbf{Z}_j Q_{Y_j}(u) - \E[\mathbf{Z}_j Q_{Y_j}(u)]) \leadsto \mathbb{G}_0(u)$ in $\ell^\infty([a,b])^{l+1}$, a tight mean-zero Gaussian process. Since $\bar{S}_{\mathrm{2SLS},n} \overset{p}{\to} \bar{S}_{\mathrm{2SLS}}$ (by the LLN and Assumption~\ref{ass:full_rank}), the continuous mapping theorem gives $\sqrt{n}(\tilde{\beta}(\cdot) - \beta^{\text{unc}}(\cdot)) \leadsto \bar{S}_{\mathrm{2SLS}}\, \mathbb{G}_0(\cdot) =: \mathbb{G}_\beta(\cdot)$. The covariance kernel $\Omega(u,u') = \bar{S}_{\mathrm{2SLS}}\, \E[\mathbf{Z}\mathbf{Z}^{\T}\xi(u)\xi(u')]\, \bar{S}_{\mathrm{2SLS}}^{\T}$ follows from the influence function $\mathbf{Z}\xi(u)$ with $\xi(u) = Q_Y(u) - \mathbf{X}^{\T}\beta^{\text{unc}}(u)$.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:pw_ols_clt}]
+
+By the algebraic structure of the IV weights, $\hat{\psi}_x(u) = \tilde{\beta}_0(u) + \tilde{\beta}_1(u)^{\T}(x - \hat{\mu}_X)$ is linear in $x$, so the unconstrained coefficients $\tilde{\beta}(u)$ are the standard 2SLS estimator applied quantile by quantile. Define the projection correction $D_x(u) := \Pi_{\mathcal{Q}}(\hat{\psi}_x)(u) - \hat{\psi}_x(u)$. Then the \est estimator decomposes as
+\[
+\hat{\beta}_1^{\est}(u) = \tilde{\beta}_1(u) + \Delta_{1,n}(u), \quad \Delta_{1,n}(u) := \hat{\Sigma}_{XX}^{-1} \frac{1}{n}\sum_{j=1}^n (X_j - \hat{\mu}_X) D_{X_j}(u),
+\]
+and $\hat{\beta}_0^{\est}(u) = \tilde{\beta}_0(u) + \Delta_{0,n}(u)$ with $\Delta_{0,n}(u) := \frac{1}{n}\sum_{j=1}^n D_{X_j}(u)$.
+
+We show $\sqrt{n}\|\Delta_n\|_\infty = o_P(1)$. Under Assumption~\ref{asspt:average_strictness}, $\psi_x(\cdot)$ is strictly increasing for each $x \in [\xbar, \xbaru]$ with slope at least $\kappa > 0$. By Lemma~\ref{lem:iso-hadamard}, $\Pi_{\mathcal{Q}}$ is Hadamard differentiable at $\psi_x$ tangentially to $C([a,b])$ with derivative equal to the identity, so the Hadamard remainder satisfies
+\[
+\|D_x\|_\infty = o(\|\hat{\psi}_x - \psi_x\|_\infty) = o_P(n^{-1/2}) \cdot (1 + \|x - \mu_X\|).
+\]
+The $o_P(n^{-1/2})$ rate holds uniformly over $x \in [\xbar, \xbaru]$: since $x \mapsto \psi_x$ is continuous and $[\xbar, \xbaru]$ is compact, the strict increase constant $\kappa$ is uniform, and the Hadamard remainder rate is controlled by $\kappa$ and the modulus of continuity of $\psi_x'$, both bounded on the compact support.
+
+Combining: $\sqrt{n}\|\Delta_{1,n}\|_\infty \leq \|\hat{\Sigma}_{XX}^{-1}\| \cdot \frac{1}{n}\sum_j \|X_j - \hat{\mu}_X\| \cdot \sqrt{n}\|D_{X_j}\|_\infty = O_P(1) \cdot O_P(1) \cdot o_P(1) = o_P(1)$ by Assumption~\ref{asspt:finite_moments}. The argument for $\Delta_{0,n}$ is analogous. By Slutsky's lemma, $\sqrt{n}(\hat{\beta}^{\est} - \beta^{\text{unc}}) = \sqrt{n}(\tilde{\beta} - \beta^{\text{unc}}) + o_P(1) \leadsto \mathbb{G}_\beta$.
+\end{proof}
+
+
+\newpage
+\section{Additional Derivations}
+
+\subsection{Auxiliary Results}
+
+The following two lemmas are reproduced from \citet{van2025regression} for ease of reference.
+
+
+
+\begin{lemma}[Properties of the projection] \label{lem:projection_properties}
+Let $\mathcal Q\subset L^2([a,b])$ be the closed convex cone of (equivalence classes of) a.e.\ nondecreasing functions.
+For $f\in L^2([a,b])$, let $\Pi_{\mathcal Q}(f)$ denote the (unique) $L^2$-metric projection onto $\mathcal Q$.
+For definiteness, for every $u\in\mathcal Q$, fix the right–continuous representative on $[a,b)$ and set $u(b):=\lim_{q\uparrow b}u(q)$.%
+\footnote{Every a.e.\ nondecreasing function admits a version which is nondecreasing and right–continuous on $[a,b)$ with a finite left limit at $b$. I always work with this canonical version.}
+This turns $\Pi_{\mathcal Q}$ into a map $\Pi_{\mathcal Q}:\ell^\infty([a,b])\to\ell^\infty([a,b])$.
+
+Then for all $f,g\in\ell^\infty([a,b])$, we have,
+\begin{enumerate}[(i)]
+\item (\emph{Order preserving}) If $f\le g$ pointwise on $[a,b]$, then $\Pi_{\mathcal Q}(f)\le \Pi_{\mathcal Q}(g)$ pointwise on $[a,b]$.
+\item (\emph{Translation equivariant}) For every constant $c\in\mathbb R$, $\Pi_{\mathcal Q}(f+c)=\Pi_{\mathcal Q}(f)+c$.
+\item (\emph{$1$–Lipschitz in $\|\cdot\|_\infty$}) 
+\[
+\|\Pi_{\mathcal Q}(f)-\Pi_{\mathcal Q}(g)\|_\infty\le \|f-g\|_\infty.
+\]
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+Write $\langle \cdot,\cdot\rangle$ for the $L^2$ inner product and $\|\cdot\|_2$ for the $L^2$ norm.
+Recall the following property of projections in Hilbert spaces. For  $u=\Pi_{\mathcal Q}(f)$,
+\begin{equation}\label{eq:VI}
+\langle f-u,\;h-u\rangle \le 0\qquad\forall\,h\in\mathcal Q.
+\end{equation}
+Moreover, note that if $u,v$ are nondecreasing, then $u\wedge v$ and $u\vee v$ are nondecreasing; since
+$|u\vee v|\le |u|+|v|$ and $|u\wedge v|\le |u|+|v|$, both belong to $L^2$.
+Hence $u\wedge v, u\vee v\in\mathcal Q$.
+
+\smallskip
+\noindent\emph{(i) Order preservation.}
+Assume $f\le g$ pointwise.
+Let $u=\Pi_{\mathcal Q}(f)$ and $v=\Pi_{\mathcal Q}(g)$, and set $A:=\{q\in[a,b]: u(q)>v(q)\}$.
+Apply \eqref{eq:VI} with $(f,u)$ and $h=u\wedge v$, and with $(g,v)$ and $h=u\vee v$:
+\[
+\int_{[a,b]} (f-u)\,(u\wedge v-u)\,dq\le 0,
+\qquad
+\int_{[a,b]} (g-v)\,(u\vee v-v)\,dq\le 0.
+\]
+On $A$ we have $u\wedge v=v$ and $u\vee v=u$, whereas away from $A$ the differences $u\wedge v-u$ and $u\vee v-v$ vanish.
+Therefore
+\[
+\int_A (f-u)\,(v-u)\,dq \;\le\; 0,
+\qquad
+\int_A (g-v)\,(u-v)\,dq \;\le\; 0.
+\]
+Summing both inequalities gives
+\begin{align*}
+0
+&\ge \int_A \big[(f-u)(v-u) + (g-v)(u-v)\big]\,dq \\
+&= \int_A (u-v)\,\big[(g-v)-(f-u)\big]\,dq \\
+&= \int_A (u-v)\,\big[(g-f)+(u-v)\big]\,dq.
+\end{align*}
+Since $f\le g$ and $u>v$ on $A$, the integrand satisfies
+\[
+(u-v)\,\big[(g-f)+(u-v)\big] \;\ge\; (u-v)^2 \;\ge\; 0.
+\]
+Hence
+\[
+0 \ge \int_A (u-v)\,\big[(g-f)+(u-v)\big]\,dq \;\ge\; \int_A (u-v)^2\,dq,
+\]
+which forces $\int_A (u-v)^2\,dq=0$, i.e.\ $u\le v$ a.e.\ on $[a,b]$.
+
+Then, to upgrade a.e.\ to pointwise by the choice of representatives, note that if there were $x_0\in[a,b)$ with $u(x_0)>v(x_0)$, then by right–continuity there exist $\varepsilon,\delta>0$ such that
+$u(x)\ge v(x)+\varepsilon$ for all $x\in(x_0,x_0+\delta)$, contradicting $u\le v$ a.e.
+If $u(b)>v(b)$, choose a null set $N$ outside of which $u\le v$ holds; since $N$ contains no interval, one can pick an increasing sequence $q_n\uparrow b$ with $q_n\notin N$.
+Then $u(q_n)\le v(q_n)$ for all $n$, and taking limits along $n\to\infty$ yields $u(b)\le v(b)$, a contradiction. Thus $\Pi_{\mathcal Q}(f)=u\le v=\Pi_{\mathcal Q}(g)$ pointwise, proving (i).
+
+\smallskip
+\noindent\emph{(ii) Translation equivariance.}
+Let $c\in\mathbb R$ and $u=\Pi_{\mathcal Q}(f)$.
+Since $h\in\mathcal Q\Rightarrow h+c\in\mathcal Q$, we have
+\[
+\|(f+c)-(u+c)\|_2=\|f-u\|_2\le \|f-h\|_2=\|(f+c)-(h+c)\|_2\qquad\forall\,h\in\mathcal Q.
+\]
+Because $\mathcal Q$ is closed and convex, the minimizer is unique, so $\Pi_{\mathcal Q}(f+c)=u+c$ in $L^2$.
+Passing to our fixed right–continuous representatives yields the pointwise identity $\Pi_{\mathcal Q}(f+c)=\Pi_{\mathcal Q}(f)+c$.
+
+\smallskip
+\noindent\emph{(iii) $\|\cdot\|_\infty$-contraction.}
+Let $\delta:=\|f-g\|_\infty$.
+Then $f\le g+\delta$ and $g\le f+\delta$ pointwise.
+By (i) and (ii),
+\[
+\Pi_{\mathcal Q}(f)\le \Pi_{\mathcal Q}(g+\delta)=\Pi_{\mathcal Q}(g)+\delta,
+\qquad
+\Pi_{\mathcal Q}(g)\le \Pi_{\mathcal Q}(f+\delta)=\Pi_{\mathcal Q}(f)+\delta.
+\]
+Hence $|\Pi_{\mathcal Q}(f)-\Pi_{\mathcal Q}(g)|\le \delta$ pointwise, and taking suprema gives
+$\|\Pi_{\mathcal Q}(f)-\Pi_{\mathcal Q}(g)\|_\infty\le \|f-g\|_\infty$.
+In particular, taking $g\equiv 0$ shows $\|\Pi_{\mathcal Q}(f)\|_\infty\le \|f\|_\infty$, so indeed
+$\Pi_{\mathcal Q}:\ell^\infty([a,b])\to\ell^\infty([a,b])$.
+\end{proof}
+
+\begin{lemma}[Hadamard differentiability of the isotonic projection in $\ell^\infty$]\label{lem:iso-hadamard}
+Let $\mathcal Q\subset L^2([a,b])$ be the closed convex cone of a.e.\ nondecreasing functions and let $\Pi_{\mathcal Q}$ be the $L^2$ metric projection onto $\mathcal Q$. Fix the right–continuous representative so that $\Pi_{\mathcal Q}:\ell^\infty([a,b])\to\ell^\infty([a,b])$.
+Suppose $m\in\mathcal Q$ is absolutely continuous with $m'(q)\ge\kappa>0$ for a.e.\ $q\in[a,b]$. Then $\Pi_{\mathcal Q}$ is Hadamard differentiable at $m$ tangentially to $C([a,b])$ with the derivative in the direction $h$ equal to
+\[
+D \Pi_{\mathcal Q}(m)[h]=h\qquad\forall h\in C([a,b]).
+\]
+\end{lemma}
+\begin{proof}
+By \cite{zarantonello1971projections}, in the Hilbert space $L^2$ one has that the directional Hadamard derivative is
+$D\Pi_{\mathcal Q}(m)[h]=\Pi_{T_{\mathcal Q}(m)}(h)$, where $T_{\mathcal Q}(m)$ is the
+Bouligand tangent cone (this holds generally for metric projections onto convex sets in Hilbert spaces). If $h\in C^\infty([a,b])$, then $\|h'\|_\infty<\infty$ and, for all
+$0<t\le \kappa/(2\|h'\|_\infty)$,
+\(
+(m+th)' = m' + t h' \ge \kappa - t\|h'\|_\infty \ge \kappa/2>0
+\)
+a.e.; hence $m+th\in\mathcal Q$. Thus $h\in T_{\mathcal Q}(m)$. Since $C^\infty([a,b])$ is
+dense in $L^2([a,b])$ and $T_{\mathcal Q}(m)$ is a closed cone, $T_{\mathcal Q}(m)=L^2([a,b])$,
+and therefore $D\Pi_{\mathcal Q}(m)[h]=h$ for all $h\in L^2$. Since this is clearly linear and continuous, the directional Hadamard differentiability strengthens to full Hadamard differentiability (see e.g. the definitions in \citet{fang2019inference}). 
+
+To pass to $\ell^\infty$ tangentially to $C([a,b])$, let $t_n\downarrow0$ and $h_n\to h$
+uniformly with $h\in C([a,b])$. Fix $\varepsilon>0$ and choose $\ell\in C^1([a,b])$ with
+$\|\ell-h\|_\infty<\varepsilon$ and $\mathrm{Lip}(\ell)=L<\infty$. For $n$ large,
+$L\le K_n:=\kappa/(2t_n)$, hence $(m+t_n\ell)'\ge\kappa/2$ a.e.,
+so $m+t_n\ell\in\mathcal Q$ and $\Pi_{\mathcal Q}(m+t_n\ell)=m+t_n\ell$.
+Using that together with the fact that $\Pi_{\mathcal Q}$ is $1$–Lipschitz in $\|\cdot\|_\infty$ from Lemma \ref{lem:projection_properties}, we have, 
+\begin{align*}
+& \Big\|
+\frac{\Pi_{\mathcal Q}(m+t_n h_n)-\Pi_{\mathcal Q}(m)}{t_n}-h
+\Big\|_\infty
+\\ &  \le \left\|\frac{\Pi_{\mathcal{Q}}\left(m+t_n h_n\right)-\Pi_{\mathcal{Q}}\left(m+t_n \ell\right)}{t_n}\right\|_{\infty}+\left\|\frac{\Pi_{\mathcal{Q}}\left(m+t_n \ell\right)-\Pi_{\mathcal{Q}}(m)}{t_n}-h\right\|_{\infty}  \\
+& \le
+\|h_n-\ell\|_\infty+\|\ell-h\|_\infty
+\le
+\|h_n-h\|_\infty+2\varepsilon,
+\end{align*}
+where the first inequality follows from the triangle inequality in $l^\infty$. 
+Letting $n\to\infty$ and then $\varepsilon\downarrow0$ shows that
+$\Pi_{\mathcal Q}$ is Hadamard differentiable at $m$ tangentially to $C([a,b])$ with
+derivative $D \Pi_{\mathcal Q,m}(h)=h$.
+\end{proof}
+
+\subsection{Derivation of the  Asymptotic Covariance Expression} \label{sec:covariance_derivation}
+
+\paragraph{Notation.}
+To simplify these derivations, we first introduce some additional notation. Let $\widetilde Z := Z - \mu_Z$, $\widetilde X := X - \mu_X$, and fix the evaluation point $x\in\mathbb R^p$ with $\tilde x := x-\mu_X$.
+Define the population moments
+\[
+M := \Sigma_{ZZ}^{-1},\qquad S := \Sigma_{ZX},\qquad A := S^{\T} M S.
+\]
+The IV weight used in our estimator can be written as,
+\[
+s(Z,x)\;=\; 1 + \tilde x^{\T} A^{-1} S^{\T} M\,\widetilde Z.
+\]
+Collect the nuisance parameters into $\theta=(\mu_X,\mu_Z,\Sigma_{ZZ},\Sigma_{ZX})$, and write the target functional as
+\[
+\psi_x(u;\theta)\;=\; \E\!\big[\, s_\theta(Z,x)\,Q_Y(u)\,\big].
+\]
+We will show equivalence, under the linear model, of our asymptotic covariance expression with the one derived in \citet{chetverikov2016iv}. Then, we state the general expression under misspecification. In particular, assume for now that,
+\[
+Q_Y(u) \;=\; \beta_0(u) + \beta_1(u)^{\T}\widetilde X + \eta(u),
+\qquad \E[\eta(u)]=0,\quad \E[\widetilde Z\,\eta(u)]=0,
+\]
+and denote $\beta_0=\beta_0(u)$, $\beta_1=\beta_1(u)$ for brevity. The vector for the sample moments is
+\[
+m(W)\;=\;\Big(\;\widetilde X,\;\widetilde Z,\;\mathrm{vec}\big(\widetilde Z\widetilde Z^{\T}-\Sigma_{ZZ}\big),\;\mathrm{vec}\big(\widetilde Z\widetilde X^{\T}-\Sigma_{ZX}\big)\;\Big).
+\]
+
+
+\paragraph{Influence Function.}
+
+Remember that the influence function of the unprojected estimator is, 
+$\hat\psi_x(u)=n^{-1}\sum_{j=1}^n \hat s_j(x)\,Q_{Y_j}(u)$. A first-order expansion of $\hat s_j=g(\hat\theta,Z_j)$ about $\theta_0$ gives
+\[
+\sqrt{n}\big(\hat\psi_x(u)-\psi_x(u)\big)
+= \frac{1}{\sqrt{n}}\sum_{j=1}^n\Big(s_j\,Q_{Y_j}(u)-\psi_x(u)\Big)
+\;+\;\Big(\partial_\theta\psi_x(u)\Big)^{\T} \frac{1}{\sqrt{n}}\sum_{j=1}^n m(W_j)
+\;+\;o_p(1),
+\]
+where
+\[
+\partial_\theta\psi_x(u) \;=\; \E\!\big[\,Q_Y(u)\,\nabla_\theta s(Z,x)\,\big]\in\R^{\dim(\theta)}.
+\]
+
+To simplify this expression, we now derive the gradient terms involved in the term $\partial_\theta\psi_x(u)$.
+
+
+Remember the following standard formulas for matrix differentials,
+\[
+dM = -\,M\,(d\Sigma_{ZZ})\,M,\qquad
+dA = (dS)^{\T}MS + S^{\T}M\,(dS) + S^{\T}(dM)S,\qquad
+d(A^{-1}) = -\,A^{-1}(dA)\,A^{-1}.
+\]
+Write $s=1+\tilde x^{\T}A^{-1}S^{\T}M\,\widetilde Z$. Its total differential is
+\begin{align*}
+ds &= (d\tilde x)^{\T}A^{-1}S^{\T}M\widetilde Z
+\;+\;\tilde x^{\T} d(A^{-1}) S^{\T}M\widetilde Z
+\;+\;\tilde x^{\T} A^{-1} (dS)^{\T}M\widetilde Z
+\;+\;\tilde x^{\T} A^{-1} S^{\T} (dM)\widetilde Z
+\;+\;\tilde x^{\T} A^{-1} S^{\T} M (d\widetilde Z).
+\end{align*}
+Then, we derive expressions for the gradients for each block of $\theta$ by rewriting $ds=\mathrm{tr}\big((\nabla s)^{\T} d(\cdot)\big)$.
+
+\begin{enumerate}
+\item \textit{Gradient w.r.t.\ $\mu_X$.}
+When varying $\mu_X$, we only have $d\tilde x = -\,d\mu_X$,
+\[
+ds = -\,(d\mu_X)^{\T} A^{-1}S^{\T}M\,\widetilde Z
+\;=\; \mathrm{tr}\!\big(\,(-A^{-1}S^{\T}M\widetilde Z)\,(d\mu_X)^{\T}\big)
+\;=\; \mathrm{tr}\!\big((\nabla_{\mu_X}s)^{\T} d\mu_X\big),
+\]
+hence
+\[
+\boxed{\;\nabla_{\mu_X} s \;=\; -\,A^{-1}S^{\T}M\,\widetilde Z.\;}
+\]
+
+\item \textit{Gradient w.r.t.\ $\mu_Z$.}
+We only have $d\widetilde Z=-\,d\mu_Z$,
+\[
+ds \;=\; -\,\tilde x^{\T}A^{-1}S^{\T}M\,(d\mu_Z)
+\;=\; \mathrm{tr}\!\big(\,(-M S A^{-1}\tilde x)\,(d\mu_Z)^{\T}\big)
+\;=\; \mathrm{tr}\!\big((\nabla_{\mu_Z}s)^{\T} d\mu_Z\big),
+\]
+hence
+\[
+\boxed{\;\nabla_{\mu_Z} s \;=\; -\,M S A^{-1}\,\tilde x.\;}
+\]
+
+\item \textit{Gradient w.r.t.\ $S=\Sigma_{ZX}$.}
+Collect the $dS$ and $(dS)^{\T}$ terms. Using $d(A^{-1})=-A^{-1}(dA)A^{-1}$ and $dA$ above,
+\begin{align*}
+ds
+&= \tilde x^{\T} A^{-1} (dS)^{\T}M\widetilde Z
+\;-\;\tilde x^{\T} A^{-1}\Big[(dS)^{\T}MS+S^{\T}M(dS)\Big]A^{-1} S^{\T}M\widetilde Z
+\;+\; \text{terms in }dM,\,d\widetilde Z,\,d\tilde x.
+\end{align*}
+Drop the terms not involving $dS$. Rewrite each contribution as a trace against $dS$,
+\begin{align*}
+\tilde x^{\T} A^{-1} (dS)^{\T}M\widetilde Z
+&= \mathrm{tr}\!\big(M\widetilde Z\,\tilde x^{\T}A^{-1}\,dS\big),\\
+-\tilde x^{\T} A^{-1} (dS)^{\T}MS\,A^{-1} S^{\T}M\widetilde Z
+&= -\,\mathrm{tr}\!\big(MS A^{-1} S^{\T}M\widetilde Z\,\tilde x^{\T}A^{-1}\,dS\big),\\
+-\tilde x^{\T} A^{-1} S^{\T}M(dS)\,A^{-1} S^{\T}M\widetilde Z
+&= -\,\mathrm{tr}\!\big((\tilde x^{\T}A^{-1} S^{\T}M\widetilde Z)\, A^{-1} S^{\T}M\,dS\big) \\
+&= -\,\mathrm{tr}\!\big(M S A^{-1}\tilde x\,\widetilde Z^{\T} M S A^{-1}\,dS\big),
+\end{align*}
+where in the last equality we used cyclicity of trace and transpose identities.
+Therefore
+\[
+ds
+= \mathrm{tr}\!\Big(
+\big[\,M\widetilde Z\,\tilde x^{\T}A^{-1}
+\;-\;M S A^{-1} S^{\T}M\widetilde Z\,\tilde x^{\T}A^{-1}
+\;-\;M S A^{-1}\tilde x\,\widetilde Z^{\T} M S A^{-1}\,\big]^{\T} dS\Big),
+\]
+so
+\[
+\boxed{\;\nabla_{S} s
+= M\widetilde Z\,\tilde x^{\T}A^{-1}
+- M S A^{-1}\Big(S^{\T}M\widetilde Z\,\tilde x^{\T}A^{-1}+\tilde x\,\widetilde Z^{\T} M S A^{-1}\Big).\;}
+\]
+
+ \item \textit{Gradient w.r.t.\ $\Sigma_{ZZ}$}.
+Here $dM=-M(d\Sigma_{ZZ})M$ enters both the $S^{\T}(dM)\widetilde Z$ and the $dA$ term inside $d(A^{-1})$. After some algebra (collect $d\Sigma_{ZZ}$ and use $d(A^{-1})$), we get,
+\begin{align*}
+ds
+&= \tilde x^{\T}A^{-1}S^{\T}(dM)\widetilde Z
+\;-\;\tilde x^{\T}A^{-1}S^{\T}(dM)S\,A^{-1} S^{\T}M\widetilde Z\\
+&= -\,\mathrm{tr}\!\Big( \big[M S A^{-1} S^{\T}M\widetilde Z - M\widetilde Z\big]\,(M S A^{-1}\tilde x)^{\T}\, d\Sigma_{ZZ}\Big),
+\end{align*}
+hence
+\[
+\boxed{\;\nabla_{\Sigma_{ZZ}} s
+= \big(M S A^{-1} S^{\T}M\widetilde Z - M\widetilde Z\big)\,(M S A^{-1}\tilde x)^{\T}.\;}
+\]
+\end{enumerate}
+
+Then, using $\E[\widetilde Z]=0$, $\E[\eta]=0$, and $\E[\widetilde Z\,Q_Y]=S\beta_1$, we can derive the corresponding expressions for the gradients of $\psi_x$,
+
+\begin{enumerate}
+\item \[
+\partial_{\mu_X}\psi_x
+= \E\big[Q_Y(-A^{-1}S^{\T}M\widetilde Z)\big]
+= -A^{-1}S^{\T}M\,(S\beta_1) = -\,\beta_1.
+\]
+
+\item \[
+\partial_{\mu_Z}\psi_x
+= \E\big[Q_Y(-M S A^{-1}\tilde x)\big]
+= -\,\beta_0\,M S A^{-1}\tilde x.
+\]
+
+\item \begin{align*}
+\partial_{S}\psi_x
+&= \E\Big[Q_Y\Big\{M\widetilde Z\,\tilde x^{\T}A^{-1}
+- M S A^{-1}\big(S^{\T}M\widetilde Z\,\tilde x^{\T}A^{-1}+\tilde x\,\widetilde Z^{\T} M S A^{-1}\big)\Big\}\Big]\\
+&= M(S\beta_1)\,\tilde x^{\T}A^{-1}
+- M S A^{-1}\Big((S^{\T}MS)\beta_1\,\tilde x^{\T}A^{-1}+\tilde x\,\beta_1^{\T}S^{\T}MS A^{-1}\Big)\\
+&= -\,M S A^{-1}\tilde x\,\beta_1^{\T}.
+\end{align*}
+
+\item \begin{align*}
+\partial_{\Sigma_{ZZ}}\psi_x
+& = \E\!\big[Q_Y\big(M S A^{-1} S^{\T}M\widetilde Z - M\widetilde Z\big)\big]\,(M S A^{-1}\tilde x)^{\T} \\
+& = \big(M S A^{-1}S^{\T}M(S\beta_1)-M(S\beta_1)\big)(M S A^{-1}\tilde x)^{\T}
+= 0.
+\end{align*}
+\end{enumerate}
+
+
+\paragraph{Cancellation against estimation error term $sQ_Y-\psi_x$.}
+Then
+\[
+sQ_Y-\psi_x
+= \beta_0\,(s-1) \;+\; \beta_1^{\T}\big(s\,\widetilde X-\tilde x\big)\;+\;s\,\eta,
+\]
+and note $s-1=\tilde x^{\T}A^{-1}S^{\T}M\widetilde Z$, and $s\,\widetilde X=\widetilde X+(\tilde x^{\T}A^{-1}S^{\T}M\widetilde Z)\,\widetilde X$. Thus
+\[
+sQ_Y-\psi_x
+= \underbrace{\beta_0\,\tilde x^{\T}A^{-1}S^{\T}M\widetilde Z}_{(\mathrm{A})}
+\;+\;\underbrace{\beta_1^{\T}(\widetilde X-\tilde x)}_{(\mathrm{B})}
+\;+\;\underbrace{\beta_1^{\T}\widetilde X\;\tilde x^{\T}A^{-1}S^{\T}M\widetilde Z}_{(\mathrm{C})}
+\;+\;\underbrace{s\,\eta}_{(\mathrm{D})}.
+\]
+
+Now multiply the derivative blocks by the corresponding components of $m(W)$:
+\begin{enumerate}
+\item $(\partial_{\mu_Z}\psi_x)^{\T}\widetilde Z = -\,\beta_0\,\tilde x^{\T}A^{-1}S^{\T}M\widetilde Z$ cancels $(\mathrm{A})$.
+\item $(\partial_{\mu_X}\psi_x)^{\T}\widetilde X = -\,\beta_1^{\T}\widetilde X$ cancels the $+\,\beta_1^{\T}\widetilde X$ part of $(\mathrm{B})$.
+\item Frobenius inner product with the $S$-score:
+\[
+\big\langle \partial_{S}\psi_x,\; \widetilde Z\widetilde X^{\T}-S\big\rangle_F
+= \mathrm{tr}\!\Big(\big[-M S A^{-1}\tilde x\,\beta_1^{\T}\big]^{\T}(\widetilde Z\widetilde X^{\T}-S)\Big)
+= -\,\beta_1^{\T}\widetilde X\;\tilde x^{\T}A^{-1}S^{\T}M\widetilde Z
+\;+\;\beta_1^{\T}\tilde x,
+\]
+which cancels $(\mathrm{C})$ and the remaining $-\,\beta_1^{\T}\tilde x$ part of $(\mathrm{B})$.
+\item The $\Sigma_{ZZ}$-block is $0$ and contributes nothing.
+\end{enumerate}
+Therefore \emph{all deterministic} $\beta$-terms cancel, and only the noise $\eta(u)$ remains,
+\[
+\phi_u(W)
+\;=\; \big(sQ_Y-\psi_x\big) + \big(\partial_\theta\psi_x\big)^{\T} m(W)
+\;=\; s(Z,x)\,\eta(u).
+\]
+\paragraph{Covariance kernel.}
+As a result of the above derivations, the asymptotic covariance kernel of $\hat\psi_x(\cdot)$ is
+\[
+\Gamma(u,u') \;=\; \E\!\big[\,s(Z,x)^2\,\eta(u)\,\eta(u')\,\big].
+\]
+To keep intercept handling transparent, in this paragraph let $X$ and $Z$ denote the \emph{centered} regressors and instruments, and introduce the augmented stacks
+\[
+\mathbf{X}:=\begin{bmatrix}1\\ X\end{bmatrix},\qquad
+\mathbf{Z}:=\begin{bmatrix}1\\ Z\end{bmatrix},\qquad
+\mathbf{x}:=\begin{bmatrix}1\\ x\end{bmatrix}.
+\]
+Define the (population) 2SLS operator
+\[
+S_{\mathrm{2SLS}}
+\;:=\;
+\big(\Sigma_{\mathbf{X}\mathbf{Z}}\;\Sigma_{\mathbf{Z}\mathbf{Z}}^{-1}\;\Sigma_{\mathbf{Z}\mathbf{X}}\big)^{-1}\;
+\Sigma_{\mathbf{X}\mathbf{Z}}\;\Sigma_{\mathbf{Z}\mathbf{Z}}^{-1},
+\qquad
+\Sigma_{\mathbf{X}\mathbf{Z}}:=\E[\mathbf{X}\mathbf{Z}^\top],\ \ 
+\Sigma_{\mathbf{Z}\mathbf{Z}}:=\E[\mathbf{Z}\mathbf{Z}^\top]\ (\succ0).
+\]
+By the Riesz representer identity,
+\[
+s(Z,x)\;=\;\mathbf{x}^{\T}S_{\mathrm{2SLS}}\,\mathbf{Z}.
+\]
+Let $a:=S_{\mathrm{2SLS}}^{\T}\mathbf{x}$. Then $s(Z,x)=a^{\T}\mathbf{Z}$ and
+\[
+\Gamma(u,u')
+\;=\; \E\!\big[(a^{\T}\mathbf{Z})^2\,\eta(u)\eta(u')\big]
+\;=\; a^{\T}\,\underbrace{\E\!\big[\mathbf{Z}\mathbf{Z}^{\T}\eta(u)\eta(u')\big]}_{=:J(u,u')}\,a
+\;=\; \mathbf{x}^{\T} S_{\mathrm{2SLS}}\,J(u,u')\,S_{\mathrm{2SLS}}^{\T} \mathbf{x},
+\]
+which is exactly the $S\,J(u,u')\,S^{\T}$ covariance in \CLP, pushed through $\mathbf{x}$. In the just-identified case
+($\dim\mathbf{Z}=\dim\mathbf{X}$ and $\Sigma_{\mathbf{Z}\mathbf{X}}$ invertible),
+\[
+S_{\mathrm{2SLS}}=(\Sigma_{\mathbf{Z}\mathbf{X}})^{-1}
+\quad\Longrightarrow\quad
+\Gamma(u,u') \;=\; \mathbf{x}^{\T}(\Sigma_{\mathbf{Z}\mathbf{X}})^{-1}\,J(u,u')\,(\Sigma_{\mathbf{Z}\mathbf{X}}^{\T})^{-1}\mathbf{x}.
+\]
+
+\paragraph{Misspecification.}
+If the linear model is misspecified, let $\beta^{\text{unc}}(u)$ solve the IV projection
+$\E\big[\mathbf{Z}\{Q_Y(u)-\mathbf{X}^{\T}\beta^{\text{unc}}(u)\}\big]=0$, and define the residual
+$\xi(u):=Q_Y(u)-\mathbf{X}^{\T}\beta^{\text{unc}}(u)$. The same derivation gives
+\[
+\phi_u=s(Z,x)\,\xi(u),\qquad
+\Gamma(u_1,u_2)=\E\!\big[s(Z,x)^2\,\xi(u_1)\xi(u_2)\big],
+\]
+which reduces to the \CLP form when the model is correctly specified ($\xi=\eta$).
+
+
+
+
+
+\end{document}

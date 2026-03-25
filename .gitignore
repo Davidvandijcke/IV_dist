@@ -1,0 +1,40 @@
+# LaTeX build artifacts
+*.aux
+*.log
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.out
+*.bbl
+*.blg
+*.toc
+
+# PDFs (compiled, not source)
+*.pdf
+
+# R artifacts
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# macOS
+.DS_Store
+Icon?
+
+# Large/private directories
+lit/
+_archive/
+overleaf_repo/
+simulations/results/
+results/
+
+# Plots (generated)
+*.png
+
+# Claude/agent state
+.claude/
+.clawd/
+
+# Memory/session logs
+memory/
