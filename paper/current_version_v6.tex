@@ -491,7 +491,7 @@ where $u_{ij} \sim U(0,1)$, $x_{1ij} \sim \exp(0.25\, \mathcal{N}(0,1))$ is an i
 \[
 x_{2j} = \pi_Z\, z_j + \eta_j + \sqrt{1 - \pi_Z^2}\, \nu_j,
 \]
-where $z_j, \nu_j \sim \exp(0.25\, \mathcal{N}(0,1))$ and $\pi_Z \in (0,1]$ controls instrument strength. The endogeneity arises because $\eta_j$ enters both the treatment equation and the outcome heterogeneity. When $\beta_{\text{slope}} = 0$, this reduces to the original specification in \citet{melly2025minimum}.
+where $z_j, \nu_j \sim \exp(0.25\, \mathcal{N}(0,1))$ and $\pi_Z \in (0,1]$ controls instrument strength. The endogeneity arises because $\eta_j$ enters both the treatment equation and the outcome heterogeneity. The original specification in \citet{chetverikov2016iv} and \citet{melly2025minimum} sets $\pi_Z = 1$ (i.e., $x_{2j} = z_j + \eta_j + \nu_j$); as \citet{melly2025minimum} note, this already produces a weak instrument problem at $m = 25$, where the first-stage $F$-statistic falls below~10 in over 40\% of draws. We generalize their design by allowing $\pi_Z < 1$ to study D-IV's performance across a wider range of instrument strengths. Setting $\beta_{\text{slope}} = 0$ recovers the original treatment effect $\gamma(u) = \sqrt{u}$.
 
 Our estimator works directly with group-level sample quantile functions $\widehat{Q}_{Y_j}(u)$, ignoring individual covariates $x_{1ij}$. This is by design: \est targets the total group-level effect $\gamma(u)$, not the conditional effect that would be obtained by first partialling out $x_{1ij}$. The baseline specification uses $n = 50$ groups, $N = 50$ observations per group, and 500 Monte Carlo replications. We evaluate quantile functions on a grid of 19 points from $u = 0.05$ to $u = 0.95$.
 
