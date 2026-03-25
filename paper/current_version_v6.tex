@@ -503,16 +503,16 @@ Table~\ref{tab:simulations} reports coefficient IMSE ($\int \|\hat{\beta}_1(u) -
 
 \input{tabs/tab_simulations}
 
-\paragraph{Instrument strength (Panel~A).} With centered $x_2$ and $n = 50$, $N = 50$, the projection delivers its largest gains at moderate instrument strength: at $\pi_Z = 0.2$ (first-stage $F \approx 4$), \est reduces coefficient IMSE by 39.1\% and $W_2^2$ by 31.4\%, with 26\% of groups having non-monotone fitted distributions. At $\pi_Z = 0.3$ ($F \approx 8$), gains remain substantial (28\% IMSE, 21\% $W_2^2$). With strong instruments ($\pi_Z = 1$, $F \approx 40$), violations are rare and gains vanish. Figure~\ref{fig:iv_strength} displays both metrics.
+\paragraph{Instrument strength (Panel~A).} With centered $x_2$ and $n = 50$, $N = 50$, the projection delivers its largest gains at moderate instrument strength: at $F \approx 3$, \est reduces coefficient IMSE by 39\% and $W_2^2$ by 31\%, with 26\% of groups having non-monotone fitted distributions. At $F \approx 6$, gains remain substantial (28\% IMSE, 21\% $W_2^2$). With strong instruments ($F > 40$), violations are rare and gains vanish. Figure~\ref{fig:iv_strength} displays both metrics as a function of the first-stage $F$-statistic.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.75\textwidth]{figs/fig_iv_strength}
-\caption{Percentage improvement of \est over unconstrained 2SLS as a function of instrument strength $\pi_Z$, for coefficient IMSE and $W_2^2$ ($n = 50$, $N = 50$, 500 replications).}
+\caption{Percentage improvement of \est over unconstrained 2SLS as a function of the first-stage $F$-statistic, for coefficient IMSE and $W_2^2$ ($n = 50$, $N = 50$, 500 replications).}
 \label{fig:iv_strength}
 \end{figure}
 
-\paragraph{Controls and heterogeneous first stage (Panel~B).} At moderate instrument strength ($\pi_Z = 0.5$, $F \approx 12$), adding exogenous controls and first-stage heterogeneity substantially amplifies the gains. With $p = 5$ regressors and $\delta = 0.5$, \est reduces IMSE by 57\% and $W_2^2$ by 44\%. The gains arise because additional regressors add dimensions to the fitted curve $\hat{\psi}_{X_j}(u) = \tilde{\beta}_0(u) + \sum_k \tilde{\beta}_{1,k}(u)(X_{jk} - \hat{\mu}_k)$, making the monotonicity constraint harder to satisfy simultaneously. Heterogeneous first-stage coefficients ($\delta > 0$) create group-specific misfit that compounds with the weak-instrument noise. These features are typical of applied IV settings: shift-share instruments have heterogeneous first stages, and most IV regressions include at least some controls.
+\paragraph{Controls and heterogeneous first stage (Panel~B).} At moderate instrument strength ($F \approx 13$--$17$), adding exogenous controls and first-stage heterogeneity substantially amplifies the gains. With $p = 5$ regressors and $\delta = 0.5$, \est reduces IMSE by 57\% and $W_2^2$ by 44\%. The gains arise because additional regressors add dimensions to the fitted curve $\hat{\psi}_{X_j}(u) = \tilde{\beta}_0(u) + \sum_k \tilde{\beta}_{1,k}(u)(X_{jk} - \hat{\mu}_k)$, making the monotonicity constraint harder to satisfy simultaneously. Heterogeneous first-stage coefficients ($\delta > 0$) create group-specific misfit that compounds with the weak-instrument noise. These features are typical of applied IV settings: shift-share instruments have heterogeneous first stages, and most IV regressions include at least some controls.
 
 \paragraph{Realistic combination (Panel~C).} Combining moderate IV, $p = 3$ controls, heterogeneous first stage ($\delta = 0.5$), $t_5$-distributed outcomes, and treatment effect heterogeneity ($\beta_{\text{slope}} = 0.2$) yields a 14\% reduction in IMSE and 6\% in $W_2^2$. Nearly 5\% of groups have non-monotone fitted quantile functions under the unconstrained estimator; \est corrects all of them.
 
@@ -524,7 +524,7 @@ Theorem~\ref{thm:pw_ols_clt} establishes that \est and unconstrained 2SLS share 
 
 \subsection{Summary}
 
-The simulations confirm the theoretical predictions. The $W_2^2$ improvement guaranteed by Lemma~\ref{lemma:improvement} is strictly positive in every realization across all configurations tested. The projection provides the largest gains in settings with moderate instrument strength ($F \approx 4$--$12$), multiple regressors, heterogeneous first-stage relationships, and heavy-tailed within-group distributions---features that are common in applied IV research. Standard 2SLS inference remains valid for \est, and confidence bands maintain correct coverage at the same width.
+The simulations confirm the theoretical predictions. The $W_2^2$ improvement guaranteed by Lemma~\ref{lemma:improvement} is strictly positive in every realization across all configurations tested. The projection provides the largest gains in settings with moderate instrument strength ($F \approx 3$--$17$), multiple regressors, heterogeneous first-stage relationships, and heavy-tailed within-group distributions---features that are common in applied IV research. Standard 2SLS inference remains valid for \est, and confidence bands maintain correct coverage at the same width.
 
 
 \section{Empirical illustration}

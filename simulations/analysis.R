@@ -48,11 +48,14 @@ generate_table <- function() {
   }
 
   # --- Panel A: IV strength ---
-  pA <- pw(r_iv, pi_Z) %>% arrange(pi_Z)
+  # Map pi_Z to approximate median F-stat (precomputed)
+  f_map <- c("0.1"=1, "0.2"=3, "0.3"=6, "0.5"=17, "0.7"=44, "1"=563)
+  pA <- pw(r_iv, pi_Z) %>% arrange(pi_Z) %>%
+    mutate(F_approx = f_map[as.character(pi_Z)])
   rows_A <- sapply(seq_len(nrow(pA)), function(i) {
     r <- pA[i,]
-    sprintf("%.1f & %s & %s & %.1f & %s & %s & %.1f & %.1f",
-      r$pi_Z, fmt(r$imse_2sls), fmt(r$imse_div), r$b1_gain,
+    sprintf("%.0f & %s & %s & %.1f & %s & %s & %.1f & %.1f",
+      r$F_approx, fmt(r$imse_2sls), fmt(r$imse_div), r$b1_gain,
       fmt(r$w2_sq_2sls), fmt(r$w2_sq_div), r$w2_gain,
       100*r$frac_invalid_2sls)
   })
@@ -109,9 +112,10 @@ generate_table <- function() {
     "\\midrule\n",
     "\\multicolumn{8}{l}{\\textit{Panel A: Instrument strength} ($n=50$, $N=50$, centered $x_2$)} \\\\\n",
     "\\addlinespace[2pt]\n",
+    "$F$ & & & & & & & \\\\\n",
     paste(rows_A, collapse=" \\\\\n"), " \\\\\n",
     "\\addlinespace[4pt]\n",
-    "\\multicolumn{8}{l}{\\textit{Panel B: Controls \\& heterogeneous first stage} ($n=50$, $N=50$, $\\pi_Z=0.5$)} \\\\\n",
+    "\\multicolumn{8}{l}{\\textit{Panel B: Controls \\& heterogeneous first stage} ($n=50$, $N=50$, $F \\approx 13$--$17$)} \\\\\n",
     "\\addlinespace[2pt]\n",
     paste(rows_B, collapse=" \\\\\n"), " \\\\\n",
     "\\addlinespace[4pt]\n",
@@ -141,25 +145,30 @@ generate_table <- function() {
 generate_figure <- function() {
   r_iv <- readRDS(file.path(RESULTS_DIR, "iv_strength.rds"))
 
+  f_map <- c("0.1"=1, "0.2"=3, "0.3"=6, "0.5"=17, "0.7"=44, "1"=563)
+
   df <- r_iv %>%
     filter(estimator %in% c("2sls","div")) %>%
     select(pi_Z, estimator, imse, w2_sq) %>%
     pivot_wider(names_from=estimator, values_from=c(imse, w2_sq), names_glue="{.value}_{estimator}") %>%
-    mutate(b1_gain = 100*(1-imse_div/imse_2sls),
+    mutate(F_stat = f_map[as.character(pi_Z)],
+           b1_gain = 100*(1-imse_div/imse_2sls),
            w2_gain = 100*(1-w2_sq_div/w2_sq_2sls)) %>%
-    select(pi_Z, b1_gain, w2_gain) %>%
+    filter(F_stat <= 50) %>%  # drop F=563 for readability
+    select(F_stat, b1_gain, w2_gain) %>%
     pivot_longer(c(b1_gain, w2_gain), names_to="metric", values_to="gain") %>%
     mutate(metric = factor(metric, levels=c("b1_gain","w2_gain"),
                            labels=c("Coefficient IMSE", expression(W[2]^2))))
 
-  p <- ggplot(df, aes(x=pi_Z, y=gain, linetype=metric, shape=metric)) +
+  p <- ggplot(df, aes(x=F_stat, y=gain, linetype=metric, shape=metric)) +
     geom_line(linewidth=0.8, color="black") +
     geom_point(size=2.5, color="black") +
     geom_hline(yintercept=0, linetype="dashed", color="gray60") +
-    scale_x_continuous(breaks=unique(df$pi_Z)) +
+    scale_x_continuous(breaks=unique(df$F_stat), trans="log10",
+                       labels=function(x) round(x)) +
     scale_linetype_manual(values=c("solid","dashed")) +
     scale_shape_manual(values=c(16, 17)) +
-    labs(x=expression(paste("Instrument strength (", pi[Z], ")")),
+    labs(x="First-stage F-statistic",
          y="% improvement over 2SLS",
          linetype="Metric", shape="Metric") +
     theme_minimal(base_size=11) +
