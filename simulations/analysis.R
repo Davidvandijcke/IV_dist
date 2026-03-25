@@ -3,7 +3,7 @@
 # =============================================================================
 #
 # Reads simulation results from simulations/results/*.rds and produces:
-#   1. tabs/tab_simulations.tex  — combined simulation table (3 panels)
+#   1. tabs/tab_simulations.tex  — combined simulation table
 #   2. figs/fig_iv_strength.pdf  — % IMSE improvement vs IV strength
 #
 # Output goes to the synced Overleaf folder.
@@ -44,6 +44,14 @@ fmt <- function(x, digits = 2) {
                          formatC(x, format = "f", digits = digits + 1)))
 }
 
+pw <- function(df, ...) {
+  df %>%
+    filter(estimator %in% c("2sls", "div")) %>%
+    select(..., estimator, imse) %>%
+    pivot_wider(names_from = estimator, values_from = imse, names_prefix = "imse_") %>%
+    mutate(gain = 100 * (1 - imse_div / imse_2sls))
+}
+
 
 # =============================================================================
 # Generate paper table
@@ -52,16 +60,10 @@ fmt <- function(x, digits = 2) {
 generate_table <- function() {
   res_iv  <- readRDS(file.path(RESULTS_DIR, "iv_strength.rds"))
   res_ss  <- readRDS(file.path(RESULTS_DIR, "sample_size.rds"))
-  res_het <- readRDS(file.path(RESULTS_DIR, "heterogeneity.rds"))
+  res_ht  <- readRDS(file.path(RESULTS_DIR, "heavy_tails.rds"))
 
   # --- Panel A: IV strength ---
-  pA <- res_iv %>%
-    filter(estimator %in% c("2sls", "div")) %>%
-    select(pi_Z, estimator, imse) %>%
-    pivot_wider(names_from = estimator, values_from = imse) %>%
-    rename(imse_2sls = `2sls`, imse_div = div) %>%
-    mutate(gain = 100 * (1 - imse_div / imse_2sls)) %>%
-    arrange(pi_Z)
+  pA <- pw(res_iv, pi_Z) %>% arrange(pi_Z)
 
   rows_A <- sapply(seq_len(nrow(pA)), function(i) {
     r <- pA[i, ]
@@ -69,16 +71,8 @@ generate_table <- function() {
             r$pi_Z, fmt(r$imse_2sls), fmt(r$imse_div), r$gain)
   })
 
-  # --- Panel B: Sample size ---
-  pB <- res_ss %>%
-    filter(estimator %in% c("2sls", "div")) %>%
-    select(M, N, estimator, imse) %>%
-    pivot_wider(names_from = estimator, values_from = imse) %>%
-    rename(imse_2sls = `2sls`, imse_div = div) %>%
-    mutate(gain = 100 * (1 - imse_div / imse_2sls)) %>%
-    arrange(M, N)
-
-  # Select representative rows (not all 16)
+  # --- Panel B: Sample size (selected rows) ---
+  pB <- pw(res_ss, M, N) %>% arrange(M, N)
   pB_sel <- pB %>% filter(
     (M == 25  & N == 25)  |
     (M == 25  & N == 200) |
@@ -93,19 +87,25 @@ generate_table <- function() {
             r$M, r$N, fmt(r$imse_2sls), fmt(r$imse_div), r$gain)
   })
 
-  # --- Panel C: Heterogeneity ---
-  pC <- res_het %>%
-    filter(estimator %in% c("2sls", "div")) %>%
-    select(beta_slope, estimator, imse) %>%
-    pivot_wider(names_from = estimator, values_from = imse) %>%
-    rename(imse_2sls = `2sls`, imse_div = div) %>%
-    mutate(gain = 100 * (1 - imse_div / imse_2sls)) %>%
-    arrange(beta_slope)
+  # --- Panel C: Heavy tails (selected rows) ---
+  pC <- pw(res_ht, N, error_df) %>%
+    mutate(error_label = ifelse(is.infinite(error_df), "None", sprintf("$t_{%g}$", error_df))) %>%
+    arrange(desc(error_df), N)  # None first, then t_3, then t_2
 
-  rows_C <- sapply(seq_len(nrow(pC)), function(i) {
-    r <- pC[i, ]
-    sprintf("%.2f & %s & %s & %.1f",
-            r$beta_slope, fmt(r$imse_2sls), fmt(r$imse_div), r$gain)
+  # Select representative rows
+  pC_sel <- pC %>% filter(
+    (is.infinite(error_df) & N == 10) |
+    (is.infinite(error_df) & N == 50) |
+    (error_df == 3 & N == 10)  |
+    (error_df == 3 & N == 25)  |
+    (error_df == 2 & N == 10)  |
+    (error_df == 2 & N == 25)
+  )
+
+  rows_C <- sapply(seq_len(nrow(pC_sel)), function(i) {
+    r <- pC_sel[i, ]
+    sprintf("%s, $N = %d$ & %s & %s & %.1f",
+            r$error_label, r$N, fmt(r$imse_2sls), fmt(r$imse_div), r$gain)
   })
 
   # --- Assemble LaTeX ---
@@ -113,26 +113,27 @@ generate_table <- function() {
     "\\begin{table}[htbp]\n",
     "\\centering\n",
     "\\caption{Monte Carlo results: IMSE of unconstrained 2SLS and \\est. ",
-    "IMSE is $\\int \\|\\hat{\\beta}_1(u) - \\beta_1(u)\\|^2\\, du$ averaged over replications. ",
-    "``\\% Gain'' is the percentage reduction in IMSE from the projection step.}\n",
+    "IMSE is $\\int \\|\\hat{\\beta}_1(u) - \\beta_1(u)\\|^2\\, du$ averaged over 500 replications. ",
+    "``\\% Gain'' is the percentage reduction in IMSE from the projection step. ",
+    "The DGP follows \\citet{melly2025minimum} with $\\gamma(u) = \\sqrt{u}$.}\n",
     "\\label{tab:simulations}\n",
     "\\begin{tabular}{lccc}\n",
     "\\toprule\n",
     " & IMSE (2SLS) & IMSE (\\est) & \\% Gain \\\\\n",
     "\\midrule\n",
-    "\\multicolumn{4}{l}{\\textit{Panel A: Instrument strength} ($n = 50$, $N = 50$, 500 reps)} \\\\\n",
+    "\\multicolumn{4}{l}{\\textit{Panel A: Instrument strength} ($n = 50$, $N = 50$)} \\\\\n",
     "\\addlinespace[2pt]\n",
     "$\\pi_Z$ & & & \\\\\n",
     paste(rows_A, collapse = " \\\\\n"), " \\\\\n",
     "\\addlinespace[6pt]\n",
-    "\\multicolumn{4}{l}{\\textit{Panel B: Sample size} ($\\pi_Z = 0.5$, 500 reps)} \\\\\n",
+    "\\multicolumn{4}{l}{\\textit{Panel B: Sample size} ($\\pi_Z = 1$)} \\\\\n",
     "\\addlinespace[2pt]\n",
     "$(n, N)$ & & & \\\\\n",
     paste(rows_B, collapse = " \\\\\n"), " \\\\\n",
     "\\addlinespace[6pt]\n",
-    "\\multicolumn{4}{l}{\\textit{Panel C: Treatment effect heterogeneity} ($n = 50$, $N = 50$, $\\pi_Z = 0.3$, 500 reps)} \\\\\n",
+    "\\multicolumn{4}{l}{\\textit{Panel C: Heavy-tailed within-group errors} ($n = 50$, $\\pi_Z = 1$)} \\\\\n",
     "\\addlinespace[2pt]\n",
-    "$\\beta_{\\text{slope}}$ & & & \\\\\n",
+    "Errors & & & \\\\\n",
     paste(rows_C, collapse = " \\\\\n"), " \\\\\n",
     "\\bottomrule\n",
     "\\end{tabular}\n",
@@ -155,12 +156,7 @@ generate_table <- function() {
 generate_figure <- function() {
   res_iv <- readRDS(file.path(RESULTS_DIR, "iv_strength.rds"))
 
-  df <- res_iv %>%
-    filter(estimator %in% c("2sls", "div")) %>%
-    select(pi_Z, estimator, imse) %>%
-    pivot_wider(names_from = estimator, values_from = imse) %>%
-    rename(imse_2sls = `2sls`, imse_div = div) %>%
-    mutate(gain = 100 * (1 - imse_div / imse_2sls))
+  df <- pw(res_iv, pi_Z) %>% arrange(pi_Z)
 
   p <- ggplot(df, aes(x = pi_Z, y = gain)) +
     geom_line(linewidth = 0.9, color = "black") +
