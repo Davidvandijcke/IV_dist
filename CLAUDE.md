@@ -42,15 +42,21 @@ Before doing anything else each session:
 ```
 IV_dist/
 ├── R/                        # Clean estimator code (future package)
-│   ├── estimators.R          # 2SLS, D-IV (pointwise-then-OLS)
+│   ├── estimators.R          # 2SLS, D-IV (with weights, return_internals)
+│   ├── inference.R           # Confidence bands: pointwise, uniform, bootstrap
 │   ├── utils.R               # PAVA, 2SLS coefficients, helpers
 │   └── first_stage.R         # Group quantile computation
 ├── simulations/
-│   ├── dgp.R                 # Unified MP DGP: dgp_mp()
+│   ├── dgp.R                 # Unified MP DGP: dgp_mp() (with base_dist parameter)
 │   ├── config.R              # Experiment configurations
 │   ├── run_simulations.R     # MC runner (parallel via mclapply)
+│   ├── run_coverage.R        # Coverage simulation for confidence bands
 │   ├── analysis.R            # Paper output: tables + figures
 │   └── results/              # .rds output (gitignored)
+├── empirical/
+│   ├── clp_replication.R     # CLP (2016) replication + D-IV + confidence bands
+│   └── figures/              # Output figures (3 PDFs with CI ribbons)
+├── data/in/                  # Input data (CLP replication package, etc.)
 ├── paper/                    # LaTeX source files
 ├── _archive/                 # Old code (gitignored)
 ├── lit/                      # Reference PDFs (gitignored)
@@ -78,27 +84,52 @@ cd IV_dist && Rscript simulations/analysis.R
 
 - **Paper (Overleaf):** `~/...Overleaf/IV_distributions/current_version_v6.tex`
 - **Paper (local):** `paper/current_version_v6.tex`
-- **Estimators:** `R/estimators.R` (2SLS, D-IV)
-- **DGP:** `simulations/dgp.R` (unified `dgp_mp()`)
+- **Estimators:** `R/estimators.R` (2SLS, D-IV — both with weights, `return_internals`)
+- **Inference:** `R/inference.R` (pointwise CIs, uniform bands, projected bootstrap)
+- **DGP:** `simulations/dgp.R` (unified `dgp_mp()` with `base_dist` parameter)
 - **Simulation runner:** `simulations/run_simulations.R`
+- **Coverage simulation:** `simulations/run_coverage.R`
 - **Paper outputs:** `simulations/analysis.R` → Overleaf tabs/ and figs/
+- **Empirical application:** `empirical/clp_replication.R` (CLP 2016 replication + D-IV + CIs)
 
 ## Core Principle
 
-All simulations use the Melly-Pons (2025) / Chetverikov et al. (2016) DGP via `dgp_mp()`. The DGP is parameterized by `endogenous`, `heterogeneity`, `pi_Z`, and `beta_slope`. No ad-hoc DGPs.
+All simulations use the Melly-Pons (2025) / Chetverikov et al. (2016) DGP via `dgp_mp()`. The DGP is parameterized by `endogenous`, `heterogeneity`, `pi_Z`, `beta_slope`, and `base_dist`. No ad-hoc DGPs.
 
 ## Estimators
 
 1. **2SLS (unconstrained)** — baseline IV estimator
-2. **CoefProj** — joint monotonicity projection via QP at vertices
-3. **PW-FIVR** — pointwise projection then OLS
+2. **D-IV** — pointwise projection then OLS (the paper's primary estimator)
+
+Both support multivariate X/Z (controls) and analytic weights via `weights` parameter.
+
+## Inference (`R/inference.R`)
+
+Three public functions, all supporting `weights` and `cluster` parameters:
+
+### `div_pointwise_ci(Q_Yk, X, Z, q_grid, weights, cluster, alpha)`
+Sandwich-based pointwise CIs. Same SEs for both 2SLS and D-IV (same asymptotic variance under Average Strictness). Returns `ci_unc` and `ci_div` with `est`, `lo`, `hi` matrices of dimension `(p+1) x Q`.
+
+### `div_uniform_cb(Q_Yk, X, Z, q_grid, weights, cluster, alpha, B, projected, multiplier, seed)`
+Multiplier bootstrap uniform confidence bands. Two variants:
+- **Unprojected** (`projected=FALSE`): valid for both 2SLS and D-IV
+- **Projected** (`projected=TRUE`): runs PAVA inside each bootstrap draw. Returns additional:
+  - `se_proj`: projected bootstrap SEs (can be tighter than sandwich)
+  - `ci_div_proj_pw`: normal-based pointwise CIs using bootstrap SEs
+  - `ci_div_proj_pctl`: percentile-based pointwise CIs (captures PAVA asymmetry)
+  - `ucb_div_proj`: projected uniform bands
+
+### `div_bootstrap_process(Q_Yk, X, Z, q_grid, weights, cluster, B, projected, multiplier, seed)`
+Raw bootstrap draws for custom inference.
+
+### Key implementation details
+- **Influence function:** `phi_j(u) = S_2sls * Z_w_j * sqrt(w_j) * xi_j(u)` where `xi_j = Q_Yj - X_aug_j' beta_unc`
+- **Weighted residuals:** The WLS influence function requires `sqrt(w) * xi` (not `xi`) in the score. Bug caught and fixed: without this, weighted SEs are ~30% too small.
+- **Cluster-robust:** Sums influence scores within clusters, with `C/(C-1)` small-sample correction. Bootstrap draws one omega per cluster (cluster wild bootstrap).
+- **Vectorized SEs:** `Phi = Z_w %*% t(S_hat)` precomputed; SEs vectorized over Q grid.
+- **Verified:** SEs match `ivreg` + `sandwich::vcovHC(type="HC0")` exactly (ratio=1.0000) for unclustered, and match `sandwich::vcovCL` exactly for clustered. Tested on both scalar X (DGP) and matrix X with controls (CLP data).
 
 ## Key Technical Insights
-
-### Coefficient Projection Approach
-For scalar X ∈ [x̲, x̄], only need to check monotonicity at endpoints:
-- γ₋(u) = β₀(u) + (x̲ - μ)β₁(u) must be monotone
-- γ₊(u) = β₀(u) + (x̄ - μ)β₁(u) must be monotone
 
 ### When Projection Helps (with heterogeneous β)
 - **Weak IV** (π_Z=0.1): **22% MSE improvement**
@@ -109,7 +140,7 @@ For scalar X ∈ [x̲, x̄], only need to check monotonicity at endpoints:
 ### Benchmark Results (2026-01-25, all heterogeneous β)
 
 **IV Strength Study** (M=30, N=25, β_slope=0.3):
-| π_Z | 2SLS MSE | Coef Gain |
+| π_Z | 2SLS MSE | D-IV Gain |
 |-----|----------|-----------|
 | 0.10 | 162.2 | **22.5%** |
 | 0.20 | 6.0 | 5.4% |
@@ -120,25 +151,6 @@ For scalar X ∈ [x̲, x̄], only need to check monotonicity at endpoints:
 - M=25, N=10: **10.2%** improvement
 - M=25, N=25: **6.7%** improvement
 - M=100, N=25: **1.1%** improvement
-
-### CoefProj vs PW-OLS
-
-**Scalar X**: Essentially equivalent (<0.5% difference)
-
-**Multivariate X**: CoefProj wins by 0.5-3%
-- p=3, moderate hetero (β_slope=0.3): **+2.2%** over PW
-- p=3, high hetero (β_slope=0.5): **+1.7%** over PW
-- p=2, very weak IV (π_Z=0.1): **+0.7%** over PW
-
-**Equivalence conditions:**
-- **Equivalent when**: X ≥ μ (or ≤ μ) w.p.1
-- **CoefProj wins when**: X spans both sides of μ
-- Reason: PAVA adjustments are opposite on different sides of μ; they cancel in PW-OLS regression
-
-**Divergence grows with:**
-1. Higher p (more vertices for joint projection)
-2. Weaker IV (more violations)
-3. Stronger β heterogeneity (steeper β(u))
 
 ## Working Style
 
@@ -153,9 +165,9 @@ For scalar X ∈ [x̲, x̄], only need to check monotonicity at endpoints:
 ## Development Notes
 
 ### Implementation
-- Joint QP projection preferred over ADMM (faster for p ≤ 8)
 - Parallel processing via mclapply for simulation speed (N-1 cores)
 - Results in `simulations/results/`
+- Controls handled via multivariate X/Z; weights via `weights` parameter
 
 ### Performance (2026-01-25)
 **Bottleneck**: PW-FIVR calls PAVA M times per estimation (91% of runtime)
@@ -210,17 +222,35 @@ E[ε_j(u) | Z_j] = 0  (IV exclusion)
 ```
 This is 2SLS applied to quantile functions as functional outcomes.
 
-## Current Status (2026-01-25)
+## Current Status (2026-03-25)
+
+### Completed
+- CLP (2016) empirical replication + D-IV comparison
+- Added `weights` parameter to `estimate_2sls` and `estimate_div`
+- Removed endpoint/CoefProj estimator (no longer in paper)
+- **Inference implementation** (`R/inference.R`):
+  - Pointwise CIs (sandwich, HC0 and cluster-robust)
+  - Uniform confidence bands (multiplier bootstrap, Gaussian/Rademacher)
+  - Projected bootstrap (PAVA inside each draw) for tighter D-IV bands
+  - Projected bootstrap pointwise CIs (normal-based + percentile)
+  - Cluster-robust inference (clustered sandwich + cluster wild bootstrap)
+  - All SEs verified against `ivreg` + `sandwich` (exact match)
+- **Coverage simulation** (`simulations/run_coverage.R`):
+  - Pointwise coverage ~95%, uniform coverage ~90-94% (with 50 reps)
+  - Projected bootstrap pointwise CIs: 6% width reduction with weak IV (pi_Z=0.3)
+- **CLP empirical figures** with three-layer D-IV confidence ribbons:
+  - Darkest: projected bootstrap pointwise CI (~9% tighter than sandwich for full sample)
+  - Medium: sandwich pointwise CI (matches CLP clustered SEs exactly)
+  - Lightest: uniform confidence band
+  - All clustered by state (`statefip`), weighted by CZ population (`timepwt48`)
+- `estimate_div()` extended with `return_internals` parameter
+- DGP extended with `base_dist` parameter (normal, t3, t2, lognormal)
 
 ### Next Steps
-1. Run full simulation study (500+ reps)
-2. Generate publication-ready tables
-3. Theoretical analysis of CoefProj vs PW-FIVR equivalence conditions
-
-## Open Questions
-
-- Formal equivalence proof for PW-OLS ≈ CoefProj (scalar X case)
-- Why doesn't CoefProj advantage monotonically increase with p?
+1. Run full simulation study (500+ reps) with updated DGP configs
+2. Generate publication-ready tables (including coverage results)
+3. Write up empirical application section for paper
+4. Add inference results to paper (Section 4.3 + simulation coverage table)
 
 ## Safety
 
@@ -230,4 +260,16 @@ This is 2SLS applied to quantile functions as functional outcomes.
 
 ---
 
-*Last updated: 2026-02-10*
+## CLP Empirical Application Data
+
+The CLP (2016) replication package is at `data/in/CLP_supplmentary material/CLP_empirical_application/`.
+- `CLP_regression_data.dta`: 1444 obs per class (CZ × decade), pre-computed
+- Endogenous: `d_tradeusch_pw` (change in Chinese imports per worker)
+- Instrument: `d_tradeotch_pw_lag` (other-country imports, lagged)
+- Weights: `timepwt48` (CZ population weights)
+- Cluster: `statefip`
+- Controls: 6 continuous + 8 region dummies + time dummy `t2`
+- Quantile outcomes: `d_p5_lnwkwage` through `d_p95_lnwkwage` (19 quantiles)
+- ADH mean: `adh_d_avg_lnwkwage_` (note trailing underscore)
+
+*Last updated: 2026-03-25 (inference implementation added)*

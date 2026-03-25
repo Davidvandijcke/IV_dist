@@ -1,6 +1,6 @@
-# FIVR Simulations
+# D-IV Simulations
 
-Comprehensive Monte Carlo study for the Functional Instrumental Variable Regression paper.
+Comprehensive Monte Carlo study for the D-IV paper.
 
 ## Design Principle
 
@@ -8,55 +8,52 @@ Comprehensive Monte Carlo study for the Functional Instrumental Variable Regress
 
 Default DGP: `β(u) = β_base + β_slope × Φ⁻¹(u)` with `β_slope = 0.3`
 
-## Main Script
+## Structure
 
-**`fivr_simulations.R`** — consolidated simulation framework
+| File | Description |
+|------|-------------|
+| `dgp.R` | Unified Melly-Pons DGP |
+| `config.R` | Experiment configurations |
+| `run_simulations.R` | MC runner (parallel via mclapply) |
+| `analysis.R` | Paper output: tables + figures |
+| `results/` | .rds output (gitignored) |
 
-### Structure
+### Estimators
 
-| Section | Description |
-|---------|-------------|
-| PART 0 | Setup and Configuration |
-| PART 1 | Estimator Functions (2SLS, CoefProj, PW-FIVR) |
-| PART 2 | Data Generating Processes |
-| PART 3 | Simulation Framework (parallel execution) |
-| PART 4 | Main Simulations |
-| PART 5 | Results Analysis and Plots |
+1. **2SLS** — unconstrained IV estimator (baseline)
+2. **D-IV** — pointwise projection then OLS
 
 ### Simulations
 
 All use **heterogeneous β(u)** by default:
 
-1. **Sample Size Study** — Varying M (groups) and N (individuals per group)
-2. **IV Strength Study** — Varying π_Z (instrument relevance)
-3. **Heterogeneity Study** — Varying β_slope (degree of effect heterogeneity)
-4. **Multivariate X Study** — Testing with p > 1 covariates
-5. **Extreme Cases** — Small samples, weak IV, high heterogeneity
+1. **Baseline** — Validate implementation on MP DGP variants
+2. **IV Strength** — Varying π_Z (instrument relevance)
+3. **Sample Size** — Varying M (groups) and N (individuals per group)
+4. **Heterogeneity** — Varying β_slope (degree of effect heterogeneity)
 
 ### Usage
 
 ```r
-# Full run (takes ~30 mins with 500 reps)
-source("simulations/fivr_simulations.R")
+# Run all experiments
+cd IV_dist && Rscript simulations/run_simulations.R
 
-# Or load functions and run custom simulations
-source("simulations/fivr_simulations.R")
-results <- run_simulation(
-  config = list(name = "my_test"),
-  dgp_fn = dgp_heterogeneous,
-  dgp_args = list(M = 50, N = 50, pi_Z = 0.3, beta_base = 1.0, beta_slope = 0.4),
-  n_reps = 500
-)
+# Run one experiment
+Rscript simulations/run_simulations.R iv_strength
+
+# Interactive
+source("simulations/run_simulations.R")
+results <- run_experiment("iv_strength")
 ```
 
 ### Outputs
 
-- `results/simulation_results.rds` — Full results object
-- `results/plot_*.png` — Publication-ready figures
+- `results/<experiment>.rds` — Per-experiment results
+- `results/all_results.rds` — Combined results
 
-## Key Findings (2026-01-25)
+## Key Findings
 
-### CoefProj/PW vs Unconstrained 2SLS
+### D-IV vs Unconstrained 2SLS
 
 | IV Strength (π_Z) | MSE Improvement |
 |-------------------|-----------------|
@@ -65,20 +62,6 @@ results <- run_simulation(
 | 0.25 | **4-7%** |
 | 0.50 (strong) | **<1%** |
 
-### CoefProj vs PW-FIVR
-
-| Condition | CoefProj Advantage |
-|-----------|-------------------|
-| Scalar X | ~0% (equivalent) |
-| Multivariate X (p=2) | 0.5-0.7% |
-| Multivariate X (p=3) | **1.5-2.2%** |
-
-**CoefProj advantage grows with:**
-- Higher p (more vertices for joint projection)
-- Weaker IV (more monotonicity violations)
-- Higher β_slope (steeper β(u) → larger violations)
-
-**Bottom line:** 
-- Use projection methods when IV is weak-moderate (π_Z < 0.3)
-- CoefProj > PW-FIVR when p > 1
+**Bottom line:**
+- Use D-IV when IV is weak-moderate (π_Z < 0.3)
 - Strong IV (π_Z ≥ 0.5): projection barely helps (estimates already precise)
