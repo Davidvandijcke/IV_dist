@@ -246,3 +246,103 @@ dgp_centered <- function(M, N, q_grid,
                       p = p, beta_slope = beta_slope)
   )
 }
+
+
+# =============================================================================
+# DGP variant with monotone control effects of varying magnitude
+# =============================================================================
+#
+# Same as dgp_centered but control effects are gamma_k(u) = c_k * u
+# where c_k ~ N(0, ctrl_magnitude) rather than u/(k+2).
+# This produces MONOTONE population QFs but NOISY estimated coefficient
+# functions that oscillate, driving violations in the fitted psi curves.
+# Matches the pattern seen in the CLP empirical application.
+#
+#' @param ctrl_magnitude SD of control effect coefficients c_k. Larger values
+#'   produce noisier estimated control coefficients and more violations.
+dgp_centered_ctrl <- function(M, N, q_grid,
+                               pi_Z          = 0.5,
+                               sigma_beta0   = 2,
+                               base_dist     = "normal",
+                               hetero_fs     = 0,
+                               p             = 1L,
+                               beta_slope    = 0,
+                               ctrl_magnitude = 1.0) {
+
+  beta0_fn <- switch(base_dist,
+    normal = function(u) sigma_beta0 * qnorm(u),
+    t5     = function(u) sigma_beta0 * qt(u, df = 5),
+    t3     = function(u) sigma_beta0 * qt(u, df = 3),
+    stop("Unknown base_dist: ", base_dist)
+  )
+
+  eta <- runif(M)
+  z_raw <- rnorm(M)
+  nu <- rnorm(M)
+  x_endog <- (pi_Z + hetero_fs * (eta - 0.5)) * z_raw +
+             eta + sqrt(max(0, 1 - pi_Z^2)) * nu
+
+  # Controls with random monotone effects
+  if (p > 1L) {
+    n_ctrl <- p - 1L
+    W <- matrix(rnorm(M * n_ctrl), M, n_ctrl)
+    X <- cbind(x_endog, W)
+    Z <- cbind(z_raw, W)
+    # Control effect coefficients: gamma_k(u) = c_k * u
+    c_k <- rnorm(n_ctrl, 0, ctrl_magnitude)
+  } else {
+    X <- x_endog
+    Z <- z_raw
+    c_k <- numeric(0)
+  }
+
+  true_gamma <- q_grid + beta_slope * qnorm(q_grid)
+
+  # True intercept
+  mu_x <- mean(x_endog)
+  true_beta0 <- beta0_fn(q_grid) + mu_x * true_gamma
+  if (p > 1L) {
+    for (k in seq_len(p - 1L)) {
+      true_beta0 <- true_beta0 + mean(W[, k]) * c_k[k] * q_grid
+    }
+  }
+
+  # alpha at grid points
+  alpha_mat <- outer(eta, q_grid) - outer(rep(0.5, M), q_grid)
+
+  y_list <- vector("list", M)
+  for (j in seq_len(M)) {
+    u_ij <- runif(N)
+    gamma_u <- u_ij + beta_slope * qnorm(u_ij)
+    alpha_u <- u_ij * eta[j] - u_ij / 2
+    y_ij <- beta0_fn(u_ij) + x_endog[j] * gamma_u + alpha_u
+    if (p > 1L) {
+      for (k in seq_len(p - 1L)) {
+        y_ij <- y_ij + W[j, k] * c_k[k] * u_ij
+      }
+    }
+    y_list[[j]] <- y_ij
+  }
+
+  parts <- "centered_ctrl"
+  if (pi_Z != 0.5)        parts <- paste0(parts, sprintf("_piZ%.2f", pi_Z))
+  if (hetero_fs != 0)      parts <- paste0(parts, sprintf("_hfs%.1f", hetero_fs))
+  if (p > 1)               parts <- paste0(parts, sprintf("_p%d", p))
+  if (ctrl_magnitude != 1) parts <- paste0(parts, sprintf("_cm%.1f", ctrl_magnitude))
+
+  list(
+    y_list     = y_list,
+    x1_list    = NULL,
+    x2         = X,
+    z          = Z,
+    q_grid     = q_grid,
+    true_gamma = true_gamma,
+    true_beta0 = true_beta0,
+    eta        = eta,
+    alpha_mat  = alpha_mat,
+    dgp_name   = parts,
+    params     = list(M = M, N = N, pi_Z = pi_Z, sigma_beta0 = sigma_beta0,
+                      base_dist = base_dist, hetero_fs = hetero_fs,
+                      p = p, beta_slope = beta_slope, ctrl_magnitude = ctrl_magnitude)
+  )
+}

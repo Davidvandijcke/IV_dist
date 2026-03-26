@@ -82,13 +82,14 @@ if (!dir.exists(RESULTS_DIR)) dir.create(RESULTS_DIR, recursive = TRUE)
 #' @param B          Bootstrap replications for uniform bands
 #' @param projected  Whether to compute projected bootstrap
 #' @return data.frame with coverage results
-run_one_rep_coverage <- function(seed, dgp_args, q_grid,
+run_one_rep_coverage <- function(seed, dgp_fn_name, dgp_args, q_grid,
                                  alpha = 0.05, B = 500L,
                                  projected = TRUE) {
   set.seed(seed)
 
   # Generate data
-  data <- do.call(dgp_centered, dgp_args)
+  dgp_fn_local <- match.fun(dgp_fn_name)
+  data <- do.call(dgp_fn_local, dgp_args)
   Q_Yk <- compute_sample_quantiles(data$y_list, q_grid)
 
   true_gamma <- data$true_gamma  # Q-vector: true slope coefficient gamma(u)
@@ -182,15 +183,23 @@ run_coverage_experiment <- function(n_reps = 500L, alpha = 0.05, B = 500L,
 
   q_grid <- Q_GRID
 
-  # Parameter configurations using dgp_centered
+  # Parameter configurations: simple DGP + realistic controls DGP
   param_grid <- data.frame(
-    M         = c(50,  50,  50,  100, 50,  50),
-    N         = c(50,  50,  50,  50,  50,  50),
-    pi_Z      = c(0.3, 0.5, 0.5, 0.5, 0.7, 0.5),
-    p         = c(1,   1,   2,   1,   1,   2),
-    hetero_fs = c(0,   0,   0.5, 0,   0,   0.5),
-    label     = c("weak IV", "moderate IV", "p=2 hFS",
-                  "large M", "strong IV", "p=2 hFS strong"),
+    dgp_type       = c("simple", "simple", "simple",
+                        "ctrl",   "ctrl",   "ctrl",   "ctrl"),
+    M              = c(50,  50,   100,
+                       50,   50,   50,   50),
+    N              = c(50,  50,   50,
+                       50,   50,   50,   50),
+    pi_Z           = c(0.3, 0.5,  0.5,
+                       0.5,  0.5,  0.3,  0.5),
+    p              = c(1,   1,    1,
+                       6,    10,   10,   10),
+    ctrl_magnitude = c(0,   0,    0,
+                       2,    2,    2,    2),
+    label          = c("F~6, p=1", "F~17, p=1", "F~17, p=1, n=100",
+                        "F~17, p=6, c=2", "F~17, p=10, c=2",
+                        "F~6, p=10, c=2", "F~17, p=10, c=2 (check)"),
     stringsAsFactors = FALSE
   )
 
@@ -202,20 +211,29 @@ run_coverage_experiment <- function(n_reps = 500L, alpha = 0.05, B = 500L,
 
   for (row_i in seq_len(nrow(param_grid))) {
     params <- param_grid[row_i, ]
-    dgp_args <- list(
-      M = params$M, N = params$N, q_grid = q_grid,
-      pi_Z = params$pi_Z, p = params$p, hetero_fs = params$hetero_fs
-    )
+    if (params$dgp_type == "ctrl") {
+      dgp_fn_name <- "dgp_centered_ctrl"
+      dgp_args <- list(
+        M = params$M, N = params$N, q_grid = q_grid,
+        pi_Z = params$pi_Z, p = params$p, ctrl_magnitude = params$ctrl_magnitude
+      )
+    } else {
+      dgp_fn_name <- "dgp_centered"
+      dgp_args <- list(
+        M = params$M, N = params$N, q_grid = q_grid,
+        pi_Z = params$pi_Z
+      )
+    }
 
-    param_str <- sprintf("%s (M=%d, pi_Z=%.1f, p=%d, delta=%.1f)",
-                         params$label, params$M, params$pi_Z, params$p, params$hetero_fs)
+    param_str <- sprintf("%s (M=%d, pi_Z=%.1f, p=%d)",
+                         params$label, params$M, params$pi_Z, params$p)
     cat(sprintf("\n  [%d] %s ... ", row_i, param_str))
     t0 <- proc.time()[3]
 
     # Run replications in parallel
     seeds <- seq_len(n_reps)
     rep_results <- parallel::mclapply(seeds, function(s) {
-      run_one_rep_coverage(s, dgp_args, q_grid, alpha = alpha, B = B)
+      run_one_rep_coverage(s, dgp_fn_name, dgp_args, q_grid, alpha = alpha, B = B)
     }, mc.cores = n_cores)
 
     rep_df <- do.call(rbind, rep_results)
@@ -226,11 +244,12 @@ run_coverage_experiment <- function(n_reps = 500L, alpha = 0.05, B = 500L,
       valid <- !is.na(sub$pw_coverage_rate)
       data.frame(
         label            = params$label,
+        dgp_type         = params$dgp_type,
         M                = params$M,
         N                = params$N,
         pi_Z             = params$pi_Z,
         p                = params$p,
-        hetero_fs        = params$hetero_fs,
+        ctrl_magnitude   = params$ctrl_magnitude,
         estimator        = est,
         pw_coverage_mean = mean(sub$pw_coverage_rate[valid]),
         ub_coverage      = mean(sub$ub_covers[valid]),
