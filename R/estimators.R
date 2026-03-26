@@ -16,7 +16,7 @@
 # Required packages: none (base R only)
 # =============================================================================
 
-# Source utility functions (pava, compute_2sls_coefs).
+# Source utility functions (pava).
 # When sourced from another script, resolve path relative to this file's location.
 local({
   this_dir <- tryCatch(

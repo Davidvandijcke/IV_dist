@@ -246,6 +246,16 @@ for (cl in CLASSES) {
     div_ub_hi      = div$div_ub_hi
   )
 
+  # Data-driven y-axis limits (encompass all plotted elements with 5% buffer)
+  all_y <- c(plot_df$clp_lo, plot_df$clp_hi,
+             plot_df$div_ub_lo, plot_df$div_ub_hi,
+             clp$adh$ci_lo, clp$adh$ci_hi)
+  y_range <- range(all_y)
+  y_pad <- 0.05 * diff(y_range)
+  y_lim <- c(y_range[1] - y_pad, y_range[2] + y_pad)
+  # Round breaks to nearest 0.5
+  y_breaks <- seq(floor(y_lim[1] * 2) / 2, ceiling(y_lim[2] * 2) / 2, by = 0.5)
+
   p <- ggplot(plot_df, aes(x = quantile)) +
     # D-IV uniform 95% confidence band (light red ribbon)
     geom_ribbon(aes(ymin = div_ub_lo, ymax = div_ub_hi),
@@ -298,10 +308,7 @@ for (cl in CLASSES) {
       labels = sprintf("%.1f", seq(0.1, 0.9, by = 0.1)),
       limits = c(0.04, 0.96), expand = c(0, 0)
     ) +
-    scale_y_continuous(
-      breaks = seq(-3, 1, by = 0.5),
-      limits = c(-3, 1.2)
-    ) +
+    scale_y_continuous(breaks = y_breaks, limits = y_lim) +
     labs(x = "Quantile", y = "Coefficient (log points)",
          title = CLASS_LABELS[cl]) +
     theme_clp
