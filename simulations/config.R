@@ -81,7 +81,24 @@ EXPERIMENTS <- list(
   ),
 
   # -----------------------------------------------------------------------
-  # 5. Realistic combination
+  # 5. Distribution shape (skewness matters more than tail heaviness)
+  # -----------------------------------------------------------------------
+  dist_shape = list(
+    dgps = "dgp_centered",
+    param_grid = expand.grid(
+      M         = 50,
+      N         = c(25, 50),
+      pi_Z      = 0.5,
+      base_dist = c("normal", "t3", "lognormal", "exponential", "chisq3"),
+      stringsAsFactors = FALSE
+    ),
+    estimators = c("2sls", "div"),
+    q_grid     = Q_GRID,
+    n_reps     = 500
+  ),
+
+  # -----------------------------------------------------------------------
+  # 6. Realistic combination
   #    p=3, hetero_fs=0.5, t5 base, beta_slope=0.2, F≈12
   # -----------------------------------------------------------------------
   realistic = list(

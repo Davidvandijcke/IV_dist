@@ -171,9 +171,12 @@ dgp_centered <- function(M, N, q_grid,
                           beta_slope   = 0) {
 
   beta0_fn <- switch(base_dist,
-    normal = function(u) sigma_beta0 * qnorm(u),
-    t5     = function(u) sigma_beta0 * qt(u, df = 5),
-    t3     = function(u) sigma_beta0 * qt(u, df = 3),
+    normal      = function(u) sigma_beta0 * qnorm(u),
+    t5          = function(u) sigma_beta0 * qt(u, df = 5),
+    t3          = function(u) sigma_beta0 * qt(u, df = 3),
+    lognormal   = function(u) sigma_beta0 * (qlnorm(u, 0, 1) - exp(0.5)),
+    exponential = function(u) sigma_beta0 * (qexp(u, 1) - 1),
+    chisq3      = function(u) sigma_beta0 * (qchisq(u, 3) - 3),
     stop("Unknown base_dist: ", base_dist)
   )
 
@@ -270,9 +273,12 @@ dgp_centered_ctrl <- function(M, N, q_grid,
                                ctrl_magnitude = 1.0) {
 
   beta0_fn <- switch(base_dist,
-    normal = function(u) sigma_beta0 * qnorm(u),
-    t5     = function(u) sigma_beta0 * qt(u, df = 5),
-    t3     = function(u) sigma_beta0 * qt(u, df = 3),
+    normal      = function(u) sigma_beta0 * qnorm(u),
+    t5          = function(u) sigma_beta0 * qt(u, df = 5),
+    t3          = function(u) sigma_beta0 * qt(u, df = 3),
+    lognormal   = function(u) sigma_beta0 * (qlnorm(u, 0, 1) - exp(0.5)),
+    exponential = function(u) sigma_beta0 * (qexp(u, 1) - 1),
+    chisq3      = function(u) sigma_beta0 * (qchisq(u, 3) - 3),
     stop("Unknown base_dist: ", base_dist)
   )
 

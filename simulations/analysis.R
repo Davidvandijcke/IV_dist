@@ -32,6 +32,7 @@ fmt <- function(x, d=2) {
 generate_table <- function() {
   r_iv   <- readRDS(file.path(RESULTS_DIR, "iv_strength.rds"))
   r_ctrl <- readRDS(file.path(RESULTS_DIR, "controls.rds"))
+  r_dist <- readRDS(file.path(RESULTS_DIR, "dist_shape.rds"))
   r_real <- readRDS(file.path(RESULTS_DIR, "realistic.rds"))
   r_mp   <- readRDS(file.path(RESULTS_DIR, "mp_baseline.rds"))
 
@@ -75,22 +76,37 @@ generate_table <- function() {
       100*r$frac_invalid_2sls)
   })
 
-  # --- Panel C: Realistic ---
-  pC <- pw(r_real, p)
-  rows_C <- sprintf("$p=3$, $\\delta=0.5$, $t_5$, $\\beta_{\\text{slope}}=0.2$ & %s & %s & %.1f & %s & %s & %.1f & %.1f",
-    fmt(pC$imse_2sls), fmt(pC$imse_div), pC$b1_gain,
-    fmt(pC$w2_sq_2sls), fmt(pC$w2_sq_div), pC$w2_gain,
-    100*pC$frac_invalid_2sls)
+  # --- Panel C: Distribution shape ---
+  dist_labels <- c(normal="Normal", t3="$t_3$", lognormal="Lognormal",
+                   exponential="Exponential", chisq3="$\\chi^2_3$")
+  pC_dist <- pw(r_dist, base_dist, N) %>%
+    mutate(dist_label = dist_labels[base_dist]) %>%
+    filter(N == 50) %>%  # show N=50 in main table
+    arrange(factor(base_dist, levels=names(dist_labels)))
+  rows_C <- sapply(seq_len(nrow(pC_dist)), function(i) {
+    r <- pC_dist[i,]
+    sprintf("%s & %s & %s & %.1f & %s & %s & %.1f & %.1f",
+      r$dist_label, fmt(r$imse_2sls), fmt(r$imse_div), r$b1_gain,
+      fmt(r$w2_sq_2sls), fmt(r$w2_sq_div), r$w2_gain,
+      100*r$frac_invalid_2sls)
+  })
 
-  # --- Panel D: MP baseline ---
-  pD <- r_mp %>% filter(estimator %in% c("2sls","div")) %>%
+  # --- Panel D: Realistic ---
+  pD <- pw(r_real, p)
+  rows_D <- sprintf("$p=3$, $\\delta=0.5$, $t_5$, $\\beta_{\\text{slope}}=0.2$ & %s & %s & %.1f & %s & %s & %.1f & %.1f",
+    fmt(pD$imse_2sls), fmt(pD$imse_div), pD$b1_gain,
+    fmt(pD$w2_sq_2sls), fmt(pD$w2_sq_div), pD$w2_gain,
+    100*pD$frac_invalid_2sls)
+
+  # --- Panel E: MP baseline ---
+  pE <- r_mp %>% filter(estimator %in% c("2sls","div")) %>%
     select(M, N, estimator, imse, frac_invalid) %>%
     pivot_wider(names_from=estimator, values_from=c(imse, frac_invalid),
                 names_glue="{.value}_{estimator}") %>%
     mutate(b1_gain = 100*(1-imse_div/imse_2sls)) %>%
     filter((M==25 & N==25) | (M==25 & N==50) | (M==50 & N==50))
-  rows_D <- sapply(seq_len(nrow(pD)), function(i) {
-    r <- pD[i,]
+  rows_E <- sapply(seq_len(nrow(pE)), function(i) {
+    r <- pE[i,]
     sprintf("$(n,N)=(%d,%d)$ & %s & %s & %.1f & --- & --- & --- & %.1f",
       r$M, r$N, fmt(r$imse_2sls), fmt(r$imse_div), r$b1_gain,
       100*r$frac_invalid_2sls)
@@ -119,13 +135,17 @@ generate_table <- function() {
     "\\addlinespace[2pt]\n",
     paste(rows_B, collapse=" \\\\\n"), " \\\\\n",
     "\\addlinespace[4pt]\n",
-    "\\multicolumn{8}{l}{\\textit{Panel C: Realistic combination} ($n=50$, $N=50$, $F \\approx 15$)} \\\\\n",
+    "\\multicolumn{8}{l}{\\textit{Panel C: Distribution shape} ($n=50$, $N=50$, $F \\approx 17$)} \\\\\n",
     "\\addlinespace[2pt]\n",
     paste(rows_C, collapse=" \\\\\n"), " \\\\\n",
     "\\addlinespace[4pt]\n",
-    "\\multicolumn{8}{l}{\\textit{Panel D: \\citet{melly2025minimum} baseline} ($\\pi_Z=1$, log-normal $x_2$)} \\\\\n",
+    "\\multicolumn{8}{l}{\\textit{Panel D: Realistic combination} ($n=50$, $N=50$, $F \\approx 15$)} \\\\\n",
     "\\addlinespace[2pt]\n",
     paste(rows_D, collapse=" \\\\\n"), " \\\\\n",
+    "\\addlinespace[4pt]\n",
+    "\\multicolumn{8}{l}{\\textit{Panel E: \\citet{melly2025minimum} baseline} ($\\pi_Z=1$, log-normal $x_2$)} \\\\\n",
+    "\\addlinespace[2pt]\n",
+    paste(rows_E, collapse=" \\\\\n"), " \\\\\n",
     "\\bottomrule\n",
     "\\end{tabular}\n",
     "\\end{table}\n"
