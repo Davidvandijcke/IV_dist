@@ -522,19 +522,127 @@ Table~\ref{tab:simulations} reports coefficient IMSE ($\int \|\hat{\beta}_1(u) -
 
 Theorem~\ref{thm:pw_ols_clt} establishes that \est and unconstrained 2SLS share the same asymptotic Gaussian process under Average Strictness, so standard 2SLS inference (sandwich standard errors, multiplier bootstrap for uniform bands) applies to \est without modification.
 
-We verify this via coverage simulations with 500 replications and $B = 500$ bootstrap draws per replication, across DGP configurations spanning weak to strong instruments and $p = 1$--$2$ regressors. At moderate IV ($F \approx 17$), pointwise coverage is 96\% and uniform coverage is 96\% at the nominal 95\% level, for both 2SLS and \est. At weak IV ($F \approx 6$), both methods are slightly conservative (pointwise and uniform coverage of 99\%), reflecting the heavier tails of the finite-sample distribution. At strong IV ($F \approx 44$), coverage is 94\% (pointwise) and 90\% (uniform). All three patterns are consistent with the asymptotic theory.
+Table~\ref{tab:coverage} reports coverage and band widths from 500 replications with $B = 500$ multiplier bootstrap draws each. We compare three sets of bands: unconstrained 2SLS, \est with unprojected bootstrap, and \est with projected bootstrap (which additionally applies PAVA inside each bootstrap draw). At moderate IV ($F \approx 17$), both pointwise and uniform coverage are close to the nominal 95\% level. At weak IV ($F \approx 6$), all methods are slightly conservative (98\% coverage), reflecting heavier tails in the finite-sample distribution. At $F \approx 44$ with $n = 50$ groups, uniform coverage is 90\%, a finite-sample effect that improves with larger $n$ (95\% at $n = 100$).
 
-Pointwise and uniform band widths based on the analytic (sandwich) standard errors are identical for 2SLS and \est, confirming that the two estimators share the same asymptotic variance. The projected bootstrap (Section~\ref{sec:asymptotic_distribution}), which resamples from the projected rather than unprojected process, produces slightly narrower bands: 1--2\% in the simulations and approximately 10\% in the empirical application of Section~\ref{sec:empirical}, where the projection is more active. The IMSE improvement from projection thus comes at no cost to inference validity: confidence bands have correct coverage and are centered more accurately, providing more informative inference about the true coefficient function.
+\begin{table}[htbp]
+\centering\small
+\caption{Coverage and band widths for the slope coefficient $\beta_1(u)$ (nominal 95\%, 500 replications, $B = 500$ bootstrap draws). ``PW'' = pointwise, ``UB'' = uniform band. ``Proj'' uses the projected bootstrap for \est. Band widths are medians across replications.}
+\label{tab:coverage}
+\begin{tabular}{lccc ccc ccc}
+\toprule
+& \multicolumn{3}{c}{Pointwise coverage (\%)} & \multicolumn{3}{c}{Uniform coverage (\%)} & \multicolumn{3}{c}{UB width} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-10}
+& 2SLS & \est & Proj & 2SLS & \est & Proj & 2SLS & \est & Proj \\
+\midrule
+$F \approx 6$ & 98.4 & 98.4 & 98.2 & 98.4 & 98.4 & 98.4 & 1.17 & 1.17 & 1.16 \\
+$F \approx 17$ & 95.7 & 95.8 & 95.5 & 95.0 & 95.0 & 95.0 & 0.70 & 0.70 & 0.69 \\
+$F \approx 44$ & 93.6 & 93.6 & 93.5 & 90.0 & 90.0 & 90.0 & 0.49 & 0.49 & 0.49 \\
+$F \approx 17$, $p{=}2$, $\delta{=}0.5$ & 95.3 & 95.4 & 95.1 & 93.6 & 93.6 & 93.6 & 0.69 & 0.69 & 0.69 \\
+$F \approx 17$, $n{=}100$ & 95.5 & 95.6 & 95.5 & 95.4 & 95.4 & 95.2 & 0.50 & 0.50 & 0.50 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two features of Table~\ref{tab:coverage} are worth noting. First, coverage and band widths are virtually identical across the three methods. This confirms the asymptotic equivalence result (Theorem~\ref{thm:pw_ols_clt}): the projection does not distort inference in finite samples. Since \est has lower IMSE with the same standard errors, it has weakly higher power for testing $\beta_1(u) = 0$. Second, the projected bootstrap produces slightly narrower uniform bands---by 1--2\% in the simulations, and by approximately 10\% in the empirical application of Section~\ref{sec:empirical}, where the projection is more active. This finite-sample improvement arises because the projected bootstrap captures the variance reduction from PAVA, yielding a tighter critical value for the sup-statistic.
 
 \subsection{Summary}
 
 The simulations confirm the theoretical predictions. The $W_2^2$ improvement guaranteed by Lemma~\ref{lemma:improvement} is strictly non-negative in every single realization across all configurations tested. The projection provides the largest gains in settings with moderate instrument strength ($F \approx 3$--$17$), multiple regressors, heterogeneous first-stage relationships, and heavy-tailed within-group distributions---features that are common in applied IV research. Standard 2SLS inference remains valid for \est, and confidence bands maintain correct coverage at the same width.
 
 
-\section{Empirical illustration}
+\section{Empirical illustrations}\label{sec:empirical}
 
-[To be completed.]
+We present two applications. Section~\ref{sec:empirical_clp} revisits the distributional effects of Chinese import competition on wages \citep{chetverikov2016iv}, illustrating the finite-sample gains from the \est projection and inference. Section~\ref{sec:empirical_fsp} studies the Food Stamp Program's effect on birth weights \citep{almond2011inside,melly2025minimum}, using the decomposition from Appendix~\ref{app:individual_decomposition} to compare the \est estimand with the conditional quantile treatment effect.
 
+\subsection{Import competition and the wage distribution}\label{sec:empirical_clp}
+
+We revisit the distributional effects of Chinese import competition on U.S.\ wages, studied by \citet{chetverikov2016iv}. Their setting is well-suited for illustrating \est: there is one endogenous group-level treatment (import exposure), a standard instrument (other-country imports), and 19 pre-computed quantile outcomes per commuting zone (CZ).
+
+\paragraph{Setting and data.}
+\CLP estimate the effect of rising Chinese imports on the distribution of log weekly wages across U.S.\ commuting zones. The unit of observation is a CZ--decade pair ($j = 1, \ldots, 722$ CZs, two periods: 1990--2000 and 2000--2007, giving $n = 1{,}444$ observations). For each CZ, the outcome is a vector of 19 quantile regression intercepts $\hat{Q}_{Y_j}(u_q)$ for $u_q \in \{0.05, 0.10, \ldots, 0.95\}$, obtained from within-CZ quantile regressions of log weekly wages on individual demographics. The endogenous variable $X_j$ is the change in Chinese import exposure per worker, instrumented by $Z_j$, imports from China to other high-income countries (lagged). Both stages include six continuous controls (manufacturing employment share, college share, foreign-born share, female employment share, routine task intensity, outsourcing exposure), eight census region dummies, and a period dummy. Regressions are weighted by CZ start-of-period population and standard errors are clustered by state, exactly replicating the \CLP specification.
+
+We apply \est to this data and compare the results with the original \CLP quantile-by-quantile 2SLS estimates. Since both estimators share the same asymptotic distribution under Average Strictness (Theorem~\ref{thm:pw_ols_clt}), any differences between them reflect the finite-sample effect of the monotonicity projection.
+
+\paragraph{Results.} Figure~\ref{fig:clp_comparison} overlays the \CLP 2SLS estimates (black circles) with the \est estimates (red triangles) for the full sample. Both series tell the same qualitative story: import competition depresses wages across the distribution, with the largest effects at lower quantiles (around $-1.4$ log points at the 10th percentile) and smaller effects in the upper tail ($-0.4$ to $-0.5$). The \est estimates are smoother, particularly in the 40th--70th percentile range where the 2SLS coefficients exhibit non-monotone oscillations that create invalid fitted wage distributions. Of the 1,444 fitted quantile functions implied by 2SLS, 93\% violate monotonicity---that is, 93\% of the CZ-level fitted wage change distributions are not valid probability distributions.
+
+Figure~\ref{fig:clp_comparison} displays four layers of inference bands around the \est estimates. The two red bands show pointwise 95\% CIs: the outer (lighter) band uses sandwich standard errors---identical to those of 2SLS---while the inner (darker) band uses projected bootstrap standard errors that account for the PAVA projection. The two blue bands show uniform 95\% confidence bands: the outer (lighter) band uses the unprojected multiplier bootstrap critical value, while the inner (darker) band uses the projected bootstrap critical value. The projected pointwise CIs are on average 9\% narrower than the sandwich CIs, with reductions of up to 22\% at quantiles where the unconstrained coefficient function is most non-monotone (e.g., $u = 0.85$). The projected uniform bands are 10\% tighter than the unprojected ones. This gain comes specifically from the PAVA projection inside each bootstrap draw, not from bootstrapping per se: the \emph{unprojected} multiplier bootstrap standard errors are within 1\% of the sandwich SEs at every quantile (mean ratio 0.989), confirming that both estimate the same asymptotic variance. The projected bootstrap, by contrast, has a mean SE ratio of 0.910 to the sandwich. These width reductions are consistent with the variance reduction from projection: a 9\% reduction in standard errors implies roughly 17\% less variance, which aligns with the IMSE improvements documented below.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{figs/fig_clp_comparison}
+\caption{\CLP 2SLS estimates and \est estimates of the effect of Chinese import competition on log weekly wages, full sample ($n = 1{,}444$). Black circles: \CLP quantile-by-quantile 2SLS. Red triangles: \est. Dashed lines: \CLP pointwise 95\% CI (clustered by state). Red shaded bands around \est: projected bootstrap pointwise CI (darkest), sandwich pointwise CI (medium), and uniform confidence band (lightest). Horizontal lines: ADH mean estimate and 95\% CI from \citet{autor2013china}.}
+\label{fig:clp_comparison}
+\end{figure}
+
+\paragraph{Subsampling exercise.} The full \CLP sample has 722 CZs---enough that both estimators are reasonably precise and their coefficient functions are visually similar. To assess the practical gains from the monotonicity constraint, we subsample the data at various CZ counts and compare IMSE.
+
+Concretely, for each subsample size $M \in \{75, 100, 150, 200, 350, 500\}$, we draw 500 random subsets of $M$ commuting zones (keeping both decades for each CZ), re-estimate both the unconstrained 2SLS and \est on each subsample, and compute the integrated mean squared error $\text{IMSE} = \int (\hat{\beta}_1(u) - \beta_1^*(u))^2\, du$, where $\beta_1^*$ is the full-sample \est estimate. We decompose the IMSE into integrated squared bias and integrated variance.
+
+Figure~\ref{fig:clp_subsampling} reports the results. The left panel shows the bias-variance decomposition. Both methods are variance-dominated at every sample size---squared bias accounts for less than 10\% of total IMSE. The \est bars are shorter than the 2SLS bars throughout, with the gap most visible at small $M$. At $M = 75$ (150 observations for 17 regressors), \est reduces IMSE by 31\%, almost entirely through variance reduction: D-IV variance is 2.04 compared to 3.00 for 2SLS, a 32\% reduction. At $M = 200$ the IMSE gain is 19\%; at $M = 500$ it is 23\%.
+
+The right panel shows the IMSE ratio (D-IV / 2SLS). The monotonicity constraint reduces IMSE by 19--31\% across all sample sizes, with the largest gain at $M = 75$ where the instrument is weakest and fitted distributions are most distorted. This pattern is consistent with the simulation results in Table~\ref{tab:simulations}: moderate instrument strength and many regressors create the conditions where the projection is most active.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figs/fig_clp_subsampling}
+\caption{Left: IMSE bias-variance decomposition for 2SLS and \est at different numbers of commuting zones ($M = 50$ excluded; both methods have IMSE $> 170$). Bars show integrated variance (dark) and integrated squared bias (light), stacked. Right: IMSE ratio (D-IV / 2SLS). Values below 100\% indicate \est outperforms. Based on 500 random subsamples per $M$, with full-sample \est as target.}
+\label{fig:clp_subsampling}
+\end{figure}
+
+
+\subsection{Food stamps and the birth weight distribution}\label{sec:empirical_fsp}
+
+We now turn to the Food Stamp Program (FSP) and birth weights, the empirical application in \citet{melly2025minimum}. This setting provides a natural laboratory for the decomposition developed in Appendix~\ref{app:individual_decomposition}: the treatment (food stamps) is individually targeted but varies at the group level, creating a gap between the conditional quantile treatment effect $\delta(u)$ estimated by \citeauthor{melly2025minimum} and the group-level distributional effect $\beta(u)$ estimated by \est.
+
+\paragraph{Setting and data.}
+Following \citet{almond2011inside} and \citet{melly2025minimum}, we study the staggered county-level introduction of the FSP between 1964 and 1975. Groups are county--trimester cells; individuals are births. The outcome is birth weight in grams. We use natality microdata from the NCHS (1968--1977) merged with county-level food stamp adoption dates from \citet{almond2011inside}, restricting to births by black mothers ($n \approx 2.8$ million individual births in approximately 17{,}000 county--trimester groups with at least 25 observations). Controls include per capita income, government transfers, and 1960 county characteristics interacted with a linear time trend. All regressions absorb county, state$\times$year, and trimester fixed effects, with standard errors clustered by county.
+
+The treatment indicator $\mathit{fsp}_{ct}$ equals one if a food stamp program was in place at least three months before birth. This is an exogenous group-level variable (conditional on fixed effects), so both estimators use $Z = X$.
+
+\paragraph{Two estimands.}
+\citeauthor{melly2025minimum} estimate a conditional quantile model with individual-level covariates (child sex, mother's age and its square, legitimacy status) in the first stage:
+\begin{equation}\label{eq:mp_model}
+Q(\tau, \mathit{bw}_{ict} \mid \mathit{fsp}_{ct}, x_{1ict}, x_{2ct}, v_{ct}) = \mathit{fsp}_{ct}\, \delta(\tau) + x_{1ict}'\, \beta(\tau) + x_{2ct}'\,\gamma_2(\tau) + \alpha(\tau, v_{ct}).
+\end{equation}
+The coefficient $\delta(\tau)$ is the direct within-type effect: the shift in the $\tau$-th conditional quantile for a given type of mother. The \est estimand $\beta_1(u)$ targets the effect on the realized group quantile---the actual $u$-th percentile of birth weights in a county--trimester cell.
+
+\paragraph{Results.}
+We replicate the \citeauthor{melly2025minimum} estimates using their \texttt{mdqr} package \citep{mdqr} and estimate $\beta_1(u)$ via \est on the same data. Figure~\ref{fig:fsp_decomposition} shows the decomposition from equation~\eqref{eq:TE_beta_new3}:
+\[
+\beta_1(u) = \delta(u) + \underbrace{\E[\bar W_j(1) - \bar W_j(0)]'\gamma(u)}_{\text{composition}} + \underbrace{\E[\Delta_j(u;1) - \Delta_j(u;0)]}_{\text{re-ranking}}.
+\]
+The composition-fixed quantile $Q_j^{\oplus}(u)$ is computed as the within-group mean of the first-stage fitted values from \texttt{mdqr}, and the re-ranking gap $\Delta_j(u) = Q_j(u) - Q_j^{\oplus}(u)$ is the difference between the realized group quantile and this average. Each component is then regressed on $\mathit{fsp}$ with the same fixed effects.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{figs/fig_fsp_decomposition}
+\caption{Decomposition of the FSP effect on birth weight (black mothers). Blue: direct within-type effect $\delta(u)$ from \citet{melly2025minimum}. Black: total \est effect $\beta_1(u)$. Green dashed: composition (change in type shares $\times$ return to type). Red dot-dashed: re-ranking (treatment effect on the aggregation gap $\Delta_j$). The decomposition is exact: $\beta_1 = \delta + \text{composition} + \text{re-ranking}$ at each quantile.}
+\label{fig:fsp_decomposition}
+\end{figure}
+
+At the 5th percentile, $\delta(0.05) \approx 27$ grams: holding mother type fixed, FSP raises the conditional 5th percentile of birth weight by almost 30 grams. Yet $\beta_1(0.05) \approx 4$ grams---the actual 5th percentile of the county birth weight distribution barely moves. The gap of 23 grams is almost entirely re-ranking ($-22$ grams), with composition contributing less than 1 gram.
+
+\paragraph{Interpretation.}
+The large re-ranking term has a precise explanation. An individual at the \emph{group}'s 5th percentile is generally not at her own \emph{conditional} 5th percentile. A young unmarried mother (who has lower baseline birth weight) sitting at the group's 5th percentile may be at, say, her conditional 15th percentile, where the treatment effect $\delta(0.15) \approx 6$ grams is far smaller than $\delta(0.05) = 27$ grams. The re-ranking term aggregates these within-type percentile shifts across all types at the group quantile cutoff: because $\delta(u)$ is steeply decreasing at the left tail, the effective treatment effect at the group's 5th percentile is a density-weighted average of $\delta$ evaluated at \emph{higher} within-type ranks, where the effect is much smaller.
+
+The composition channel---whether FSP changes \emph{who gives birth}---is negligible throughout the distribution. This is consistent with food stamps affecting nutrition rather than fertility decisions.
+
+\paragraph{The direct effect as a density-weighted average.}
+While the model in \eqref{eq:mp_model} imposes a common $\delta(u)$ across types, we can run the \citeauthor{melly2025minimum} estimator separately within each of four demographic cells (mother age $<24$/$\geq 24$ $\times$ legitimate/illegitimate) to examine heterogeneity. Figure~\ref{fig:fsp_type_qte} shows the type-specific conditional QTEs $\delta_k(u)$. At the 5th percentile, the effects range from $60$ grams for older married mothers to $-35$ grams for younger married mothers, with younger unmarried mothers---the dominant type at the group's left tail---showing an intermediate effect of approximately $40$ grams.
+
+The overall $\delta(0.05) \approx 27$ grams is thus an average across heterogeneous type-specific effects, implicitly weighted by each type's conditional density at the group quantile cutoff. Types that are more concentrated at the left tail of the birth weight distribution---young unmarried mothers, who account for 46\% of the density weight at the 5th percentile but only 36\% of births---receive disproportionate weight. This density-weighting mechanism is inherent to any estimand based on conditional quantiles evaluated at a common quantile index.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{figs/fig_fsp_type_qte}
+\caption{Type-specific conditional QTEs $\delta_k(u)$ for black mothers, estimated by running \texttt{mdqr} separately within each of four demographic cells (mother age $<24$/$\geq 24$ $\times$ legitimate/illegitimate). Shaded bands are pointwise 95\% CIs clustered by county. The large heterogeneity across types---particularly at the left tail---illustrates that the common $\delta(u)$ is a density-weighted average of disparate type-specific effects.}
+\label{fig:fsp_type_qte}
+\end{figure}
+
+\paragraph{Discussion.}
+The two estimands answer different questions, and neither dominates. The conditional effect $\delta(0.05) = 27$ grams documents that FSP delivers large nutritional benefits to the most vulnerable births within each demographic group---a finding with clear clinical and targeting implications. The \est estimate $\beta_1(0.05) = 4$ grams shows that these within-type gains do not translate to large shifts in the county-level low-birth-weight rate, because the types that benefit most at the conditional tail are not the dominant types at the group tail.
+
+More broadly, this application illustrates when the two approaches diverge. For treatments that operate at the individual level but are identified through group-level variation (food stamps, school vouchers, Medicaid expansions), the conditional effect $\delta(u)$ captures the individual-level mechanism, while $\beta_1(u)$ captures the aggregate distributional impact. For treatments that genuinely operate at the group level---such as the import competition shock in Section~\ref{sec:empirical_clp}---the group quantile $\beta_1(u)$ is the natural estimand, and the decomposition is not needed.
 
 \newpage
 
