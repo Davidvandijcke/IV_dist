@@ -522,28 +522,28 @@ Table~\ref{tab:simulations} reports coefficient IMSE ($\int \|\hat{\beta}_1(u) -
 
 Theorem~\ref{thm:pw_ols_clt} establishes that \est and unconstrained 2SLS share the same asymptotic Gaussian process under Average Strictness, so standard 2SLS inference (sandwich standard errors, multiplier bootstrap for uniform bands) applies to \est without modification.
 
-Table~\ref{tab:coverage} reports coverage and band widths from 500 replications with $B = 500$ multiplier bootstrap draws each. We compare three sets of bands: unconstrained 2SLS, \est with unprojected bootstrap, and \est with projected bootstrap (which additionally applies PAVA inside each bootstrap draw). At moderate IV ($F \approx 17$), both pointwise and uniform coverage are close to the nominal 95\% level. At weak IV ($F \approx 6$), all methods are slightly conservative (98\% coverage), reflecting heavier tails in the finite-sample distribution. At $F \approx 44$ with $n = 50$ groups, uniform coverage is 90\%, a finite-sample effect that improves with larger $n$ (95\% at $n = 100$).
+Table~\ref{tab:coverage} reports coverage and band widths from 500 replications with $B = 500$ multiplier bootstrap draws each. We compare 2SLS bands (sandwich standard errors, unprojected bootstrap) with \est bands (projected bootstrap, which applies PAVA inside each bootstrap draw to capture the finite-sample variance reduction from projection). At moderate IV ($F \approx 17$), both pointwise and uniform coverage are close to the nominal 95\% level. At weak IV ($F \approx 6$), both methods are slightly conservative (98\% coverage), reflecting heavier tails in the finite-sample distribution. At $F \approx 44$ with $n = 50$, uniform coverage is 90\%, a finite-sample effect that improves with larger $n$ (95\% at $n = 100$).
 
 \begin{table}[htbp]
 \centering\small
-\caption{Coverage and band widths for the slope coefficient $\beta_1(u)$ (nominal 95\%, 500 replications, $B = 500$ bootstrap draws). ``PW'' = pointwise, ``UB'' = uniform band. ``Proj'' uses the projected bootstrap for \est. Band widths are medians across replications.}
+\caption{Coverage and band widths for the slope coefficient $\beta_1(u)$ (nominal 95\%, 500 replications, $B = 500$ bootstrap draws). 2SLS uses sandwich standard errors and unprojected bootstrap; \est uses the projected bootstrap. Band widths are medians across replications. ``$\Delta$ width'' is the percentage reduction in uniform band width for \est relative to 2SLS.}
 \label{tab:coverage}
-\begin{tabular}{lccc ccc ccc}
+\begin{tabular}{lcc cc cc r}
 \toprule
-& \multicolumn{3}{c}{Pointwise coverage (\%)} & \multicolumn{3}{c}{Uniform coverage (\%)} & \multicolumn{3}{c}{UB width} \\
-\cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-10}
-& 2SLS & \est & Proj & 2SLS & \est & Proj & 2SLS & \est & Proj \\
+& \multicolumn{2}{c}{PW coverage (\%)} & \multicolumn{2}{c}{UB coverage (\%)} & \multicolumn{2}{c}{UB width} & \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
+& 2SLS & \est & 2SLS & \est & 2SLS & \est & $\Delta$ width \\
 \midrule
-$F \approx 6$ & 98.4 & 98.4 & 98.2 & 98.4 & 98.4 & 98.4 & 1.17 & 1.17 & 1.16 \\
-$F \approx 17$ & 95.7 & 95.8 & 95.5 & 95.0 & 95.0 & 95.0 & 0.70 & 0.70 & 0.69 \\
-$F \approx 44$ & 93.6 & 93.6 & 93.5 & 90.0 & 90.0 & 90.0 & 0.49 & 0.49 & 0.49 \\
-$F \approx 17$, $p{=}2$, $\delta{=}0.5$ & 95.3 & 95.4 & 95.1 & 93.6 & 93.6 & 93.6 & 0.69 & 0.69 & 0.69 \\
-$F \approx 17$, $n{=}100$ & 95.5 & 95.6 & 95.5 & 95.4 & 95.4 & 95.2 & 0.50 & 0.50 & 0.50 \\
+$F \approx 6$ & 98.4 & 98.2 & 98.4 & 98.4 & 1.165 & 1.155 & $-0.9\%$ \\
+$F \approx 17$ & 95.7 & 95.5 & 95.0 & 95.0 & 0.695 & 0.692 & $-0.5\%$ \\
+$F \approx 44$ & 93.6 & 93.5 & 90.0 & 90.0 & 0.493 & 0.492 & $-0.2\%$ \\
+$F \approx 17$, $p{=}2$, $\delta{=}0.5$ & 95.3 & 95.1 & 93.6 & 93.6 & 0.693 & 0.690 & $-0.5\%$ \\
+$F \approx 17$, $n{=}100$ & 95.5 & 95.5 & 95.4 & 95.2 & 0.503 & 0.500 & $-0.5\%$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Two features of Table~\ref{tab:coverage} are worth noting. First, coverage and band widths are virtually identical across the three methods. This confirms the asymptotic equivalence result (Theorem~\ref{thm:pw_ols_clt}): the projection does not distort inference in finite samples. Since \est has lower IMSE with the same standard errors, it has weakly higher power for testing $\beta_1(u) = 0$. Second, the projected bootstrap produces slightly narrower uniform bands---by 1--2\% in the simulations, and by approximately 10\% in the empirical application of Section~\ref{sec:empirical}, where the projection is more active. This finite-sample improvement arises because the projected bootstrap captures the variance reduction from PAVA, yielding a tighter critical value for the sup-statistic.
+Two features of Table~\ref{tab:coverage} are worth noting. First, coverage is near-nominal for both methods across all configurations, confirming the asymptotic equivalence result (Theorem~\ref{thm:pw_ols_clt}): the projection does not distort inference. Since \est has lower IMSE with comparable standard errors, it has weakly higher power for testing $\beta_1(u) = 0$. Second, the projected bootstrap produces slightly narrower uniform bands for \est---by 0.2--0.9\% in the simulations, and by approximately 10\% in the empirical application of Section~\ref{sec:empirical}, where the projection is more active. This finite-sample improvement arises because the projected bootstrap captures the variance reduction from PAVA, yielding a tighter critical value for the sup-statistic.
 
 \subsection{Summary}
 
