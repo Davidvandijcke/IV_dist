@@ -115,10 +115,7 @@ generate_table <- function() {
   tex <- paste0(
     "\\begin{table}[htbp]\n",
     "\\centering\\small\n",
-    "\\caption{Monte Carlo results (500 replications). ",
-    "IMSE is $\\int \\|\\hat{\\beta}_1(u) - \\beta_1(u)\\|^2\\, du$ averaged over replications. ",
-    "$W_2^2$ is the average squared Wasserstein distance between estimated and true conditional quantile functions. ",
-    "``Inv.'' is the fraction of groups with non-monotone fitted $\\hat{\\psi}_{X_j}$.}\n",
+    "\\caption{Monte Carlo results: IMSE and $W_2^2$ improvement from projection.}\n",
     "\\label{tab:simulations}\n",
     "\\begin{tabular}{lccccccr}\n",
     "\\toprule\n",
@@ -148,6 +145,10 @@ generate_table <- function() {
     paste(rows_E, collapse=" \\\\\n"), " \\\\\n",
     "\\bottomrule\n",
     "\\end{tabular}\n",
+    "\\floatfoot{\\footnotesize 500 replications, $n = 50$, $N = 50$, 19 quantile grid points. ",
+    "IMSE $= \\int \\|\\hat{\\beta}_1(u) - \\beta_1(u)\\|^2\\, du$ averaged over replications. ",
+    "$W_2^2$ is the average squared Wasserstein distance between estimated and true conditional distributions. ",
+    "``Inv.'' is the fraction of groups with non-monotone $\\hat{\\psi}_{X_j}$.}\n",
     "\\end{table}\n"
   )
 
