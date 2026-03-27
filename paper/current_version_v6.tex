@@ -530,25 +530,25 @@ Table~\ref{tab:coverage} reports pointwise and uniform coverage alongside band w
 \cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
 & 2SLS & \est & 2SLS & \est & 2SLS & \est & $\Delta$ width \\
 \midrule
-\multicolumn{8}{l}{\textit{No controls ($p = 1$, $n = 50$, lognormal base)}} \\
+\multicolumn{8}{l}{\textit{No controls ($p = 1$, $n = 50$)}} \\
 \addlinespace[2pt]
-$F \approx 6$ & 98.2 & 98.0 & 98.8 & 99.0 & 1.721 & 1.671 & $-2.9\%$ \\
-$F \approx 17$ & 95.5 & 95.3 & 94.4 & 94.4 & 1.011 & 0.998 & $-1.3\%$ \\
-$F \approx 17$, $n{=}100$ & 94.9 & 94.9 & 94.0 & 94.0 & 0.725 & 0.722 & $-0.4\%$ \\
+$F \approx 6$ & 98.3 & 98.1 & 98.6 & 98.8 & 2.495 & 2.425 & $-2.8\%$ \\
+$F \approx 17$ & 95.6 & 95.4 & 95.0 & 94.8 & 1.465 & 1.447 & $-1.3\%$ \\
+$F \approx 17$, $n{=}100$ & 95.5 & 95.4 & 95.8 & 95.6 & 1.044 & 1.040 & $-0.3\%$ \\
 \addlinespace[4pt]
-\multicolumn{8}{l}{\textit{With controls ($c = 2$, $n = 75$, normal base)}} \\
+\multicolumn{8}{l}{\textit{With controls ($c = 2$, $n = 75$)}} \\
 \addlinespace[2pt]
-$F \approx 17$, $p{=}6$ & 94.1 & 93.5 & 94.2 & 92.2 & 0.668 & 0.652 & $-2.4\%$ \\
-$F \approx 17$, $p{=}10$ & 93.8 & 92.9 & 93.4 & 92.0 & 0.778 & 0.737 & $-5.2\%$ \\
-$F \approx 6$, $p{=}10$ & 97.7 & 97.3 & 98.4 & 98.2 & 1.333 & 1.261 & $-5.4\%$ \\
+$F \approx 17$, $p{=}6$ & 94.0 & 93.2 & 96.0 & 95.0 & 1.281 & 1.257 & $-1.9\%$ \\
+$F \approx 17$, $p{=}10$ & 93.5 & 92.8 & 91.4 & 90.0 & 1.364 & 1.323 & $-3.0\%$ \\
+$F \approx 6$, $p{=}10$ & 97.5 & 96.9 & 97.8 & 97.0 & 2.356 & 2.238 & $-5.0\%$ \\
 \bottomrule
 \end{tabular}
-\floatfoot{\footnotesize 500 replications; $B = 1{,}000$ multiplier bootstrap draws; $N = 50$. PW: pointwise; UB: uniform band. Band widths are medians across replications. ``$\Delta$ width'': percentage reduction in UB width for \est relative to 2SLS. 2SLS uses sandwich SEs and unprojected bootstrap; \est uses the projected bootstrap (PAVA applied inside each draw). No controls: single endogenous regressor, lognormal base distribution. With controls: $p - 1$ exogenous controls with mixed monotone and non-monotone population effects scaled by $c$, normal base distribution, $n = 75$.}
+\floatfoot{\footnotesize 500 replications; $B = 500$ multiplier bootstrap draws; $N = 50$; lognormal base distribution throughout. PW: pointwise; UB: uniform band. Band widths are medians across replications. ``$\Delta$ width'': percentage reduction in UB width for \est relative to 2SLS. 2SLS uses sandwich SEs and unprojected bootstrap; \est uses the projected bootstrap (PAVA applied inside each draw). With controls: $p - 1$ exogenous controls with mixed monotone and non-monotone population effects scaled by $c$; $n = 75$.}
 \end{table}
 
 Coverage is near-nominal for both methods across all configurations, confirming the asymptotic equivalence in Theorem~\ref{thm:pw_ols_clt}. The projection does not distort inference. Because \est has lower IMSE at comparable standard errors, it has weakly higher power for testing $\beta_1(u) = 0$.
 
-The projected bootstrap produces narrower uniform bands for \est. Without controls the reduction is 1--3\%. With realistic controls, where noisily estimated control coefficients drive additional violations, it reaches 2--5\%, and about 10\% in our empirical application (Section~\ref{sec:empirical}). The projected bootstrap captures the variance reduction from PAVA, yielding a tighter critical value for the sup-statistic.
+The projected bootstrap produces narrower uniform bands for \est. Without controls the reduction is 1--3\%. With controls, where noisily estimated control coefficients drive additional violations, it reaches 2--5\%, and about 10\% in our empirical application (Section~\ref{sec:empirical}). The projected bootstrap captures the variance reduction from PAVA, yielding a tighter critical value for the sup-statistic.
 
 \subsection{Computation}\label{sec:computation}
 
