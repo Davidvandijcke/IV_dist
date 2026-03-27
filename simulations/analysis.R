@@ -93,7 +93,7 @@ generate_table <- function() {
 
   # --- Panel D: Realistic ---
   pD <- pw(r_real, p)
-  rows_D <- sprintf("$p=3$, $\\delta=0.5$, $t_5$, $\\beta_{\\text{slope}}=0.2$ & %s & %s & %.1f & %s & %s & %.1f & %.1f",
+  rows_D <- sprintf("$p=3$, $\\delta=0.5$, LN, $\\beta_{\\text{slope}}=0.2$ & %s & %s & %.1f & %s & %s & %.1f & %.1f",
     fmt(pD$imse_2sls), fmt(pD$imse_div), pD$b1_gain,
     fmt(pD$w2_sq_2sls), fmt(pD$w2_sq_div), pD$w2_gain,
     100*pD$frac_invalid_2sls)
