@@ -145,10 +145,15 @@ generate_table <- function() {
     paste(rows_E, collapse=" \\\\\n"), " \\\\\n",
     "\\bottomrule\n",
     "\\end{tabular}\n",
-    "\\floatfoot{\\footnotesize 500 replications, $n = 50$, $N = 50$, 19 quantile grid points. ",
-    "IMSE $= \\int \\|\\hat{\\beta}_1(u) - \\beta_1(u)\\|^2\\, du$ averaged over replications. ",
-    "$W_2^2$ is the average squared Wasserstein distance between estimated and true conditional distributions. ",
-    "``Inv.'' is the fraction of groups with non-monotone $\\hat{\\psi}_{X_j}$.}\n",
+    "\\floatfoot{\\footnotesize 500 replications; $n = 50$, $N = 50$ unless noted; 19 quantile grid points ($u = 0.05, \\ldots, 0.95$). ",
+    "IMSE $= \\int \\|\\hat{\\beta}_1(u) - \\beta_1(u)\\|^2\\, du$ averaged over replications; ",
+    "$W_2^2$: average squared Wasserstein distance between estimated and true conditional distributions; ",
+    "``Inv.'': fraction of groups with non-monotone fitted $\\hat{\\psi}_{X_j}$. ",
+    "Panel~A varies the first-stage $F$-statistic ($p = 1$, no controls). ",
+    "Panel~B adds exogenous controls ($p$) and first-stage heterogeneity ($\\delta$) at $\\pi_Z = 0.5$. ",
+    "Panel~C varies the base distribution $\\beta_0(u)$ at $F \\approx 17$. ",
+    "Panel~D combines moderate IV, controls, heterogeneous first stage, $t_5$ outcomes, and treatment heterogeneity. ",
+    "Panel~E uses the original \\citet{melly2025minimum} specification ($\\pi_Z = 1$, log-normal covariates, $\\gamma(u) = \\sqrt{u}$).}\n",
     "\\end{table}\n"
   )
 

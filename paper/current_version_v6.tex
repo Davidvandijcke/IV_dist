@@ -505,14 +505,7 @@ Table~\ref{tab:simulations} reports coefficient IMSE, $W_2^2$, and the fraction 
 
 \input{tabs/tab_simulations}
 
-\paragraph{Instrument strength (Panel~A).} The largest gains occur at moderate instrument strength. At $F \approx 3$, \est reduces IMSE by 39\% and $W_2^2$ by 31\%; over a quarter of groups have non-monotone fitted distributions at this point. Gains remain large at $F \approx 6$ (28\% IMSE, 21\% $W_2^2$) but vanish once $F$ exceeds 40. At $F \approx 1$ the improvement is smaller (14\%) because 2SLS bias dominates variance, leaving less room for the projection to help. Figure~\ref{fig:iv_strength} plots both metrics against the first-stage $F$.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.75\textwidth]{figs/fig_iv_strength}
-\caption{Percentage improvement of \est over unconstrained 2SLS as a function of the first-stage $F$-statistic, for coefficient IMSE and $W_2^2$ ($n = 50$, $N = 50$, 500 replications).}
-\label{fig:iv_strength}
-\end{figure}
+\paragraph{Instrument strength (Panel~A).} The largest gains occur at moderate instrument strength. At $F \approx 3$, \est reduces IMSE by 39\% and $W_2^2$ by 31\%; over a quarter of groups have non-monotone fitted distributions at this point. Gains remain large at $F \approx 6$ (28\% IMSE, 21\% $W_2^2$) but vanish once $F$ exceeds 40. At $F \approx 1$ the improvement is smaller (14\%) because 2SLS bias dominates variance, leaving less room for the projection to help.
 
 \paragraph{Controls and heterogeneous first stage (Panel~B).} At moderate instrument strength ($F \approx 13$--$17$), controls and first-stage heterogeneity amplify the gains. With $p = 2$ and $\delta = 1$, IMSE falls by 32\% and $W_2^2$ by 20\%; with $p = 5$ and $\delta = 0.5$, the reductions reach 57\% and 44\%. Each additional regressor adds a dimension to the fitted curve $\hat{\psi}_{X_j}(u) = \tilde{\beta}_0(u) + \sum_k \tilde{\beta}_{1,k}(u)(X_{jk} - \hat{\mu}_k)$, making it harder for all dimensions to satisfy monotonicity at once. Heterogeneous first-stage coefficients ($\delta > 0$) introduce group-specific misfit on top of the IV noise. Both features are standard in practice: shift-share instruments have heterogeneous first stages, and most specifications include controls. None of this matters when instruments are strong: at $F > 500$, gains are zero regardless of $p$ or $\delta$.
 
@@ -530,7 +523,7 @@ Table~\ref{tab:coverage} reports pointwise and uniform coverage alongside band w
 
 \begin{table}[htbp]
 \centering\small
-\caption{Coverage and uniform band widths for $\beta_1(u)$ at nominal 95\%. 2SLS uses sandwich SEs and unprojected bootstrap; \est uses the projected bootstrap. Band widths are medians across replications.}
+\caption{Coverage and uniform band widths for $\beta_1(u)$ (nominal 95\%).}
 \label{tab:coverage}
 \begin{tabular}{lcc cc cc r}
 \toprule
@@ -551,7 +544,7 @@ $F \approx 17$, $p{=}10$ & 93.0 & 91.8 & 91.8 & 90.0 & 1.058 & 1.009 & $-4.6\%$ 
 $F \approx 6$, $p{=}10$ & 96.9 & 96.1 & 98.0 & 97.5 & 1.868 & 1.754 & $-6.1\%$ \\
 \bottomrule
 \end{tabular}
-\floatfoot{\footnotesize 400 replications, $B = 500$ bootstrap draws. ``$\Delta$ width'' is the percentage reduction for \est relative to 2SLS.}
+\floatfoot{\footnotesize 400 replications; $B = 500$ multiplier bootstrap draws; $n = 50$, $N = 50$ unless noted. PW: pointwise; UB: uniform band. Band widths are medians across replications. ``$\Delta$ width'': percentage reduction in UB width for \est relative to 2SLS. 2SLS uses sandwich SEs and unprojected bootstrap; \est uses the projected bootstrap (PAVA applied inside each draw). Simple DGP: one endogenous regressor, no controls. With controls: $p - 1$ exogenous controls with monotone population effects of magnitude $c$; estimated coefficient functions oscillate in finite samples.}
 \end{table}
 
 Coverage is near-nominal for both methods across all configurations, confirming the asymptotic equivalence in Theorem~\ref{thm:pw_ols_clt}. The projection does not distort inference. Because \est has lower IMSE at comparable standard errors, it has weakly higher power for testing $\beta_1(u) = 0$.
