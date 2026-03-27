@@ -485,7 +485,7 @@ We compare unconstrained 2SLS with \est across several DGP configurations. For e
 
 \subsection{Data generating process}
 
-Our main DGP extends the endogenous grouped-data design of \citet{chetverikov2016iv} and \citet{melly2025minimum}. For groups $j = 1, \ldots, n$ with $N$ individuals each, individual outcomes follow the Skorohod representation
+Our main DGP extends the endogenous grouped-data design of \citet{chetverikov2016iv} and \citet{melly2025minimum}. Setting $\sigma\,\Phi^{-1} \to 0$, $\gamma(u) = \sqrt{u}$, $\delta = 0$, $p = 1$, and replacing the normal instruments with log-normals recovers their specification exactly (Panel~E). We generalize along several dimensions---centered treatment variable, non-monotone coefficients, controls, first-stage heterogeneity, and flexible base distributions---to capture features of applied IV settings that their DGP abstracts from, and that turn out to matter for the performance of the projection. For groups $j = 1, \ldots, n$ with $N$ individuals each, individual outcomes follow the Skorohod representation
 \begin{equation}\label{eq:dgp_sim}
 y_{ij} = \sigma\, \Phi^{-1}(u_{ij}) + x_{2j}\, \gamma(u_{ij}) + \alpha_j(u_{ij}),
 \end{equation}
