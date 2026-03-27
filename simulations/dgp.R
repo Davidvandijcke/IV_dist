@@ -196,15 +196,26 @@ dgp_centered <- function(M, N, q_grid,
     Z <- z_raw
   }
 
-  true_gamma <- q_grid + beta_slope * qnorm(q_grid)
+  # Treatment effect: gamma(u) = u + beta_slope * sin(2*pi*u)
+  # The sine perturbation makes gamma non-monotone for beta_slope > 0.
+  # gamma' = 1 + 2*pi*beta_slope*cos(2*pi*u) > 0 for beta_slope < 1/(2*pi) ~ 0.16,
+  # but the QF stays monotone even for larger beta_slope because sigma*Phi^{-1}'
+  # dominates. For beta_slope = 0 this reduces to gamma(u) = u.
+  true_gamma <- q_grid + beta_slope * sin(2 * pi * q_grid)
 
-  # True intercept: E[Q_{Y_j}(u)] = beta0_fn(u) + E[x_endog]*gamma(u) + E[alpha(u)]
-  # E[alpha(u)] = u*E[eta] - u/2 = 0
+  # Control effect functions: odd controls have monotone effects (u),
+  # even controls have non-monotone effects (0.1 * sin(k*pi*u)).
+  # This mix is more realistic than all-monotone controls.
+  ctrl_fn <- function(u, k) {
+    if (k %% 2 == 1) u else 0.1 * sin(k * pi * u)
+  }
+
+  # True intercept: E[Q_{Y_j}(u)]
   mu_x <- mean(x_endog)
   true_beta0 <- beta0_fn(q_grid) + mu_x * true_gamma
   if (p > 1L) {
     for (k in seq_len(p - 1L)) {
-      true_beta0 <- true_beta0 + mean(W[, k]) * q_grid / (k + 2)
+      true_beta0 <- true_beta0 + mean(W[, k]) * ctrl_fn(q_grid, k)
     }
   }
 
@@ -214,12 +225,12 @@ dgp_centered <- function(M, N, q_grid,
   y_list <- vector("list", M)
   for (j in seq_len(M)) {
     u_ij <- runif(N)
-    gamma_u <- u_ij + beta_slope * qnorm(u_ij)
+    gamma_u <- u_ij + beta_slope * sin(2 * pi * u_ij)
     alpha_u <- u_ij * eta[j] - u_ij / 2
     y_ij <- beta0_fn(u_ij) + x_endog[j] * gamma_u + alpha_u
     if (p > 1L) {
       for (k in seq_len(p - 1L)) {
-        y_ij <- y_ij + W[j, k] * (u_ij / (k + 2))
+        y_ij <- y_ij + W[j, k] * ctrl_fn(u_ij, k)
       }
     }
     y_list[[j]] <- y_ij
