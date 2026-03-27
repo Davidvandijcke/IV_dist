@@ -77,7 +77,7 @@
 \maketitle
 
 \begin{abstract}
-We propose distribution-valued instrumental variable regression (\est), an instrumental variables method for settings where the outcome variable is an entire distribution. Distribution-valued outcomes arise in many applications. A leading example is when researchers are interested in estimating the effect of a group-level treatment on the entire outcome distribution within the group. The \est estimator solves the Fr\'echet IV regression problem at each observed covariate value---finding the closest valid probability distribution to the IV-weighted average in 2-Wasserstein distance---and recovers coefficient functions by OLS. This projection step reduces estimation error in finite samples and ensures that the estimated conditional distributions are valid probability measures. We show that the \est estimator converges weakly to a zero-mean Gaussian process and establish the validity of the bootstrap for uniform inference.
+We develop distribution-valued instrumental variable regression (\est), an IV method for settings where the outcome is an entire distribution---for instance, how import competition reshapes the wage distribution within a commuting zone. Framing this as IV regression in the 2-Wasserstein space, we obtain a single-step estimator that extends global Fr\'echet regression to the endogenous case. \est projects IV-weighted quantile curves onto the space of valid distributions and recovers coefficient functions by OLS. The projection reduces estimation error in every finite-sample realization and guarantees valid fitted distributions. Under a mild monotonicity condition, the projected estimator shares the same Gaussian limit as unconstrained 2SLS, so standard inference applies; under misspecification, the bootstrap remains valid for uniform bands. In simulations, the projection reduces IMSE by up to 57\%. Revisiting the distributional wage effects of Chinese import competition, the projected bootstrap produces 9--10\% narrower confidence bands and a subsampling exercise shows 19--31\% IMSE gains. Because the estimator vectorizes across quantiles rather than looping, it is orders of magnitude faster than existing implementations.
 
 \medskip
 \noindent \textbf{Keywords:} instrumental variables, distributional outcomes, Fr\'echet regression, Wasserstein distance, quantile functions, monotone projection
@@ -531,29 +531,59 @@ Table~\ref{tab:coverage} reports pointwise and uniform coverage alongside band w
 \cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
 & 2SLS & \est & 2SLS & \est & 2SLS & \est & $\Delta$ width \\
 \midrule
-\multicolumn{8}{l}{\textit{Simple DGP ($p = 1$, no controls)}} \\
+\multicolumn{8}{l}{\textit{Simple DGP ($p = 1$, $n = 50$)}} \\
 \addlinespace[2pt]
-$F \approx 6$ & 98.4 & 98.3 & 98.8 & 98.8 & 1.119 & 1.098 & $-1.9\%$ \\
-$F \approx 17$ & 96.0 & 95.6 & 95.8 & 95.8 & 0.677 & 0.676 & $-0.2\%$ \\
-$F \approx 17$, $n{=}100$ & 95.4 & 95.4 & 95.5 & 95.2 & 0.501 & 0.499 & $-0.4\%$ \\
+$F \approx 6$ & 98.4 & 98.3 & 98.8 & 98.6 & 1.175 & 1.161 & $-1.2\%$ \\
+$F \approx 17$ & 95.7 & 95.6 & 95.6 & 95.4 & 0.692 & 0.689 & $-0.4\%$ \\
+$F \approx 17$, $n{=}100$ & 95.5 & 95.5 & 96.2 & 96.2 & 0.505 & 0.503 & $-0.4\%$ \\
 \addlinespace[4pt]
-\multicolumn{8}{l}{\textit{With controls ($c = 2$, mixed monotone/non-monotone effects)}} \\
+\multicolumn{8}{l}{\textit{With controls ($c = 2$, $n = 75$, mixed monotone/non-monotone effects)}} \\
 \addlinespace[2pt]
-$F \approx 17$, $p{=}6$ & 93.7 & 93.1 & 91.0 & 90.0 & 0.808 & 0.785 & $-2.9\%$ \\
-$F \approx 17$, $p{=}10$ & 93.4 & 92.5 & 90.8 & 89.5 & 0.917 & 0.878 & $-4.3\%$ \\
-$F \approx 6$, $p{=}10$ & 97.3 & 96.6 & 97.5 & 96.8 & 1.601 & 1.474 & $-7.9\%$ \\
+$F \approx 17$, $p{=}6$ & 94.1 & 93.5 & 94.2 & 92.2 & 0.668 & 0.652 & $-2.4\%$ \\
+$F \approx 17$, $p{=}10$ & 93.8 & 92.9 & 93.4 & 92.0 & 0.778 & 0.737 & $-5.2\%$ \\
+$F \approx 6$, $p{=}10$ & 97.7 & 97.3 & 98.4 & 98.2 & 1.333 & 1.261 & $-5.4\%$ \\
 \bottomrule
 \end{tabular}
-\floatfoot{\footnotesize 400 replications; $B = 500$ multiplier bootstrap draws; $n = 50$, $N = 50$ unless noted. PW: pointwise; UB: uniform band. Band widths are medians across replications. ``$\Delta$ width'': percentage reduction in UB width for \est relative to 2SLS. 2SLS uses sandwich SEs and unprojected bootstrap; \est uses the projected bootstrap (PAVA applied inside each draw). Simple DGP: one endogenous regressor, no controls. With controls: $p - 1$ exogenous controls with mixed monotone and non-monotone population effects scaled by $c$; estimated coefficient functions oscillate in finite samples.}
+\floatfoot{\footnotesize 500 replications; $B = 1{,}000$ multiplier bootstrap draws; $N = 50$. PW: pointwise; UB: uniform band. Band widths are medians across replications. ``$\Delta$ width'': percentage reduction in UB width for \est relative to 2SLS. 2SLS uses sandwich SEs and unprojected bootstrap; \est uses the projected bootstrap (PAVA applied inside each draw). Simple DGP: one endogenous regressor, no controls. With controls: $p - 1$ exogenous controls with mixed monotone and non-monotone population effects scaled by $c$; estimated coefficient functions oscillate in finite samples.}
 \end{table}
 
 Coverage is near-nominal for both methods across all configurations, confirming the asymptotic equivalence in Theorem~\ref{thm:pw_ols_clt}. The projection does not distort inference. Because \est has lower IMSE at comparable standard errors, it has weakly higher power for testing $\beta_1(u) = 0$.
 
-The projected bootstrap produces narrower uniform bands for \est. With the simple DGP the reduction is small (0.2--1.9\%). With realistic controls, where noisily estimated control coefficients drive additional violations, it reaches 3--8\%, and about 10\% in our empirical application (Section~\ref{sec:empirical}). The projected bootstrap captures the variance reduction from PAVA, yielding a tighter critical value for the sup-statistic.
+The projected bootstrap produces narrower uniform bands for \est. With the simple DGP the reduction is small (0.4--1.2\%). With realistic controls, where noisily estimated control coefficients drive additional violations, it reaches 2--5\%, and about 10\% in our empirical application (Section~\ref{sec:empirical}). The projected bootstrap captures the variance reduction from PAVA, yielding a tighter critical value for the sup-statistic.
+
+\subsection{Computation}\label{sec:computation}
+
+Both \CLP and \MP estimate the coefficient function $\beta_1(u)$ by running a separate regression for each quantile level $u$. \MP solves $n \times Q$ within-group quantile regressions in the first stage, then a second-stage regression. \CLP runs $Q$ independent 2SLS regressions on the group-level quantile outcomes. When there are no individual-level covariates, our approach avoids quantile regression entirely: it computes sample quantile functions directly by sorting within each group, then solves the 2SLS normal equations for all $Q$ quantile levels simultaneously in a single matrix operation. The key source of the speedup is this vectorization across the quantile grid---our second stage is one matrix solve rather than $Q$ separate regressions.
+
+Table~\ref{tab:timing} reports median computation times across 20 replications for 19 quantile levels, with no individual-level covariates. At $n = 100$ groups and $N = 200$ individuals per group, \MP takes 5.4 seconds, \CLP takes 41 milliseconds, and \est (including the sample quantile computation) takes 7 milliseconds---a speedup of roughly $800\times$ over \MP and $6\times$ over \CLP. The \MP computation time grows with both $n$ and $N$ because it solves $n \times Q$ quantile regression problems on $N$ observations each; \CLP grows only with $n$ (its $Q$ regressions are on $n$ group-level observations); and our method is nearly insensitive to $N$ beyond the initial sort. At $n = 500$, $N = 1{,}000$ (500K total observations), \MP takes 22.7 seconds while \est takes 65 milliseconds, a $349\times$ speedup.
+
+This speed difference matters for bootstrap inference. The multiplier bootstrap in Section~\ref{sec:asymptotic_distribution} requires $B$ evaluations of the estimator ($B = 2{,}000$ in our empirical application). With \est this takes seconds; repeating the \MP or \CLP estimation $B$ times would take minutes to hours.
+
+\begin{table}[htbp]
+\centering
+\caption{Median computation time (milliseconds) for 19 quantile levels, no individual-level covariates. \MP: within-group quantile regression + second-stage 2SLS. \CLP: quantile-by-quantile 2SLS. 2SLS and \est: sample quantiles + vectorized matrix 2SLS (with PAVA projection for \est). Median of 20 replications.}
+\label{tab:timing}
+\small
+\begin{tabular}{rr r rrr rr}
+\toprule
+$n$ & $N$ & Total obs & \MP & \CLP & 2SLS & \est & Speedup \\
+\midrule
+50 & 50 & 2,500 & 1,739 & 24 & 2 & 3 & $696\times$ \\
+50 & 1,000 & 50,000 & 2,241 & 23 & 4 & 5 & $448\times$ \\
+100 & 200 & 20,000 & 5,399 & 41 & 5 & 7 & $771\times$ \\
+100 & 1,000 & 100,000 & 7,752 & 36 & 10 & 11 & $705\times$ \\
+200 & 200 & 40,000 & 4,157 & 27 & 7 & 10 & $416\times$ \\
+200 & 1,000 & 200,000 & 5,747 & 25 & 15 & 18 & $319\times$ \\
+500 & 200 & 100,000 & 8,895 & 26 & 19 & 25 & $356\times$ \\
+500 & 1,000 & 500,000 & 22,668 & 34 & 60 & 65 & $349\times$ \\
+\bottomrule
+\end{tabular}
+\floatfoot{\footnotesize Speedup column: \MP time / \est time. All timings single-threaded on an Apple M1 Pro with 16\,GB RAM. The \est column includes sample quantile computation and the PAVA projection; the 2SLS column includes sample quantiles but not the projection.}
+\end{table}
 
 \subsection{Summary}
 
-The $W_2^2$ improvement from Lemma~\ref{lemma:improvement} holds in every realization across all configurations. The projection helps most when instruments are moderate ($F \approx 3$--$17$), the specification includes multiple regressors with heterogeneous first stages, and within-group outcomes are skewed. All three are common in applied work. Inference is unaffected: coverage stays on target and bands are the same width or slightly narrower with the projected bootstrap.
+The $W_2^2$ improvement from Lemma~\ref{lemma:improvement} holds in every realization across all configurations. The projection helps most when instruments are moderate ($F \approx 3$--$17$), the specification includes multiple regressors with heterogeneous first stages, and within-group outcomes are skewed. All three are common in applied work. Inference is unaffected: coverage stays on target and bands are the same width or slightly narrower with the projected bootstrap. And \est is orders of magnitude faster than existing implementations when no individual-level covariates are present, because it vectorizes across quantile levels instead of looping.
 
 
 \section{Empirical illustrations}\label{sec:empirical}
