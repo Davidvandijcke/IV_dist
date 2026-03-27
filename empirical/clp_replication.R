@@ -190,17 +190,19 @@ run_div <- function(data, class_name) {
               mean(ci_ub$se_proj[k, ] / ci_ub$se[k, ])))
 
   data.frame(
-    quantile        = Q_GRID,
-    beta1_2sls      = beta1_2sls,
-    beta1_div       = beta1_div,
-    div_pw_lo       = ci_pw$ci_div$lo[k, ],
-    div_pw_hi       = ci_pw$ci_div$hi[k, ],
-    div_proj_pw_lo  = ci_ub$ci_div_proj_pw$lo[k, ],
-    div_proj_pw_hi  = ci_ub$ci_div_proj_pw$hi[k, ],
-    div_ub_lo       = ci_ub$ucb_div$lo[k, ],
-    div_ub_hi       = ci_ub$ucb_div$hi[k, ],
-    div_se          = ci_pw$se[k, ],
-    div_se_proj     = ci_ub$se_proj[k, ]
+    quantile           = Q_GRID,
+    beta1_2sls         = beta1_2sls,
+    beta1_div          = beta1_div,
+    div_pw_lo          = ci_pw$ci_div$lo[k, ],
+    div_pw_hi          = ci_pw$ci_div$hi[k, ],
+    div_proj_pw_lo     = ci_ub$ci_div_proj_pw$lo[k, ],
+    div_proj_pw_hi     = ci_ub$ci_div_proj_pw$hi[k, ],
+    div_ub_lo          = ci_ub$ucb_div$lo[k, ],
+    div_ub_hi          = ci_ub$ucb_div$hi[k, ],
+    div_ub_proj_lo     = ci_ub$ucb_div_proj$lo[k, ],
+    div_ub_proj_hi     = ci_ub$ucb_div_proj$hi[k, ],
+    div_se             = ci_pw$se[k, ],
+    div_se_proj        = ci_ub$se_proj[k, ]
   )
 }
 
@@ -221,9 +223,11 @@ theme_clp <- theme_bw(base_size = 11) +
     panel.grid.minor = element_blank(),
     plot.title = element_text(hjust = 0.5, size = 12),
     legend.position = "bottom",
-    legend.margin = margin(t = -5),
-    legend.text = element_text(size = 9),
-    legend.key.width = unit(1.5, "cm"),
+    legend.box = "vertical",
+    legend.margin = margin(t = 2),
+    legend.spacing.y = unit(4, "pt"),
+    legend.text = element_text(size = 8),
+    legend.key.height = unit(0.4, "cm"),
     axis.title = element_text(size = 11),
     axis.text = element_text(size = 10)
   )
@@ -233,17 +237,19 @@ for (cl in CLASSES) {
   div <- div_results[[cl]]
 
   plot_df <- data.frame(
-    quantile       = Q_GRID,
-    clp_est        = clp$qr$estimate,
-    clp_lo         = clp$qr$ci_lo,
-    clp_hi         = clp$qr$ci_hi,
-    div_est        = div$beta1_div,
-    div_pw_lo      = div$div_pw_lo,
-    div_pw_hi      = div$div_pw_hi,
-    div_proj_pw_lo = div$div_proj_pw_lo,
-    div_proj_pw_hi = div$div_proj_pw_hi,
-    div_ub_lo      = div$div_ub_lo,
-    div_ub_hi      = div$div_ub_hi
+    quantile          = Q_GRID,
+    clp_est           = clp$qr$estimate,
+    clp_lo            = clp$qr$ci_lo,
+    clp_hi            = clp$qr$ci_hi,
+    div_est           = div$beta1_div,
+    div_pw_lo         = div$div_pw_lo,
+    div_pw_hi         = div$div_pw_hi,
+    div_proj_pw_lo    = div$div_proj_pw_lo,
+    div_proj_pw_hi    = div$div_proj_pw_hi,
+    div_ub_lo         = div$div_ub_lo,
+    div_ub_hi         = div$div_ub_hi,
+    div_ub_proj_lo    = div$div_ub_proj_lo,
+    div_ub_proj_hi    = div$div_ub_proj_hi
   )
 
   # Data-driven y-axis limits (encompass all plotted elements with 5% buffer)
@@ -257,15 +263,22 @@ for (cl in CLASSES) {
   y_breaks <- seq(floor(y_lim[1] * 2) / 2, ceiling(y_lim[2] * 2) / 2, by = 0.5)
 
   p <- ggplot(plot_df, aes(x = quantile)) +
-    # D-IV uniform 95% confidence band (light red ribbon)
-    geom_ribbon(aes(ymin = div_ub_lo, ymax = div_ub_hi),
-                fill = "#c0392b", alpha = 0.10) +
-    # D-IV sandwich pointwise 95% CI (medium red ribbon)
-    geom_ribbon(aes(ymin = div_pw_lo, ymax = div_pw_hi),
-                fill = "#c0392b", alpha = 0.15) +
-    # D-IV projected bootstrap pointwise 95% CI (darker red ribbon)
-    geom_ribbon(aes(ymin = div_proj_pw_lo, ymax = div_proj_pw_hi),
-                fill = "#c0392b", alpha = 0.22) +
+    # Zero line (thin, distinct from ADH lines)
+    geom_hline(yintercept = 0, color = "grey70", linewidth = 0.3) +
+    # Uniform bands (blue shading, mapped to fill for legend)
+    geom_ribbon(aes(ymin = div_ub_lo, ymax = div_ub_hi,
+                    fill = "Uniform CB"),
+                alpha = 0.18) +
+    geom_ribbon(aes(ymin = div_ub_proj_lo, ymax = div_ub_proj_hi,
+                    fill = "Uniform CB (proj.)"),
+                alpha = 0.28) +
+    # Pointwise bands (red shading, mapped to fill for legend)
+    geom_ribbon(aes(ymin = div_pw_lo, ymax = div_pw_hi,
+                    fill = "Pointwise CI"),
+                alpha = 0.20) +
+    geom_ribbon(aes(ymin = div_proj_pw_lo, ymax = div_proj_pw_hi,
+                    fill = "Pointwise CI (proj.)"),
+                alpha = 0.35) +
     # ADH mean 95% CI (dotted lines)
     geom_hline(aes(yintercept = clp$adh$ci_lo, linetype = "ADH 95% CI"),
                color = "grey40", linewidth = 0.5) +
@@ -286,22 +299,35 @@ for (cl in CLASSES) {
     geom_line(aes(y = div_est, color = "D-IV"), linewidth = 0.5) +
     geom_point(aes(y = div_est, color = "D-IV", shape = "D-IV"), size = 2.2) +
     # Scales
+    scale_fill_manual(
+      name = NULL,
+      values = c("Pointwise CI"         = "#e8b4b0",
+                 "Pointwise CI (proj.)" = "#c0392b",
+                 "Uniform CB"           = "#b3d4e8",
+                 "Uniform CB (proj.)"   = "#2980b9"),
+      guide = guide_legend(order = 2, nrow = 1,
+                           override.aes = list(alpha = 1),
+                           keywidth = unit(0.7, "cm"))
+    ) +
     scale_color_manual(
       name = NULL,
       values = c("CLP" = "black", "D-IV" = "#c0392b"),
-      guide = guide_legend(order = 1)
+      guide = guide_legend(order = 1, nrow = 1,
+                           keywidth = unit(1, "cm"))
     ) +
     scale_shape_manual(
       name = NULL,
       values = c("CLP" = 16, "D-IV" = 17),
-      guide = guide_legend(order = 1)
+      guide = guide_legend(order = 1, nrow = 1,
+                           keywidth = unit(1, "cm"))
     ) +
     scale_linetype_manual(
       name = NULL,
       values = c("ADH Estimate" = "solid",
                   "ADH 95% CI" = "dotted",
                   "CLP 95% CI" = "dashed"),
-      guide = guide_legend(order = 2)
+      guide = guide_legend(order = 1, nrow = 1,
+                           keywidth = unit(1, "cm"))
     ) +
     scale_x_continuous(
       breaks = seq(0.1, 0.9, by = 0.1),
@@ -314,7 +340,7 @@ for (cl in CLASSES) {
     theme_clp
 
   fig_path <- file.path(FIG_DIR, sprintf("clp_div_comparison_%s.pdf", cl))
-  ggsave(fig_path, p, width = 7, height = 5)
+  ggsave(fig_path, p, width = 7, height = 5.5)
   cat(sprintf("  Saved: %s\n", fig_path))
 }
 
