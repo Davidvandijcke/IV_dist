@@ -275,10 +275,15 @@ for (cl in CLASSES) {
     # Pointwise bands (red shading, mapped to fill for legend)
     geom_ribbon(aes(ymin = div_pw_lo, ymax = div_pw_hi,
                     fill = "Pointwise CI"),
-                alpha = 0.20) +
+                alpha = 0.30) +
+    # Thin border on sandwich pointwise so edge is visible against blue
+    geom_line(aes(y = div_pw_lo), color = "#c0392b", alpha = 0.25,
+              linewidth = 0.3, linetype = "solid") +
+    geom_line(aes(y = div_pw_hi), color = "#c0392b", alpha = 0.25,
+              linewidth = 0.3, linetype = "solid") +
     geom_ribbon(aes(ymin = div_proj_pw_lo, ymax = div_proj_pw_hi,
                     fill = "Pointwise CI (proj.)"),
-                alpha = 0.35) +
+                alpha = 0.40) +
     # ADH mean 95% CI (dotted lines)
     geom_hline(aes(yintercept = clp$adh$ci_lo, linetype = "ADH 95% CI"),
                color = "grey40", linewidth = 0.5) +
