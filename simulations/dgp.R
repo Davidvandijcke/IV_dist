@@ -305,22 +305,26 @@ dgp_centered_ctrl <- function(M, N, q_grid,
     W <- matrix(rnorm(M * n_ctrl), M, n_ctrl)
     X <- cbind(x_endog, W)
     Z <- cbind(z_raw, W)
-    # Control effect coefficients: gamma_k(u) = c_k * u
+    # Control effect coefficients with magnitude scaling
     c_k <- rnorm(n_ctrl, 0, ctrl_magnitude)
+    # Control effect functions: odd = monotone (u), even = non-monotone (0.1*sin)
+    ctrl_fn_c <- function(u, k) {
+      if (k %% 2 == 1) u else 0.1 * sin(k * pi * u)
+    }
   } else {
     X <- x_endog
     Z <- z_raw
     c_k <- numeric(0)
   }
 
-  true_gamma <- q_grid + beta_slope * qnorm(q_grid)
+  true_gamma <- q_grid + beta_slope * sin(2 * pi * q_grid)
 
   # True intercept
   mu_x <- mean(x_endog)
   true_beta0 <- beta0_fn(q_grid) + mu_x * true_gamma
   if (p > 1L) {
     for (k in seq_len(p - 1L)) {
-      true_beta0 <- true_beta0 + mean(W[, k]) * c_k[k] * q_grid
+      true_beta0 <- true_beta0 + mean(W[, k]) * c_k[k] * ctrl_fn_c(q_grid, k)
     }
   }
 
@@ -330,12 +334,12 @@ dgp_centered_ctrl <- function(M, N, q_grid,
   y_list <- vector("list", M)
   for (j in seq_len(M)) {
     u_ij <- runif(N)
-    gamma_u <- u_ij + beta_slope * qnorm(u_ij)
+    gamma_u <- u_ij + beta_slope * sin(2 * pi * u_ij)
     alpha_u <- u_ij * eta[j] - u_ij / 2
     y_ij <- beta0_fn(u_ij) + x_endog[j] * gamma_u + alpha_u
     if (p > 1L) {
       for (k in seq_len(p - 1L)) {
-        y_ij <- y_ij + W[j, k] * c_k[k] * u_ij
+        y_ij <- y_ij + W[j, k] * c_k[k] * ctrl_fn_c(u_ij, k)
       }
     }
     y_list[[j]] <- y_ij

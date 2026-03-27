@@ -537,19 +537,19 @@ $F \approx 6$ & 98.4 & 98.3 & 98.8 & 98.8 & 1.119 & 1.098 & $-1.9\%$ \\
 $F \approx 17$ & 96.0 & 95.6 & 95.8 & 95.8 & 0.677 & 0.676 & $-0.2\%$ \\
 $F \approx 17$, $n{=}100$ & 95.4 & 95.4 & 95.5 & 95.2 & 0.501 & 0.499 & $-0.4\%$ \\
 \addlinespace[4pt]
-\multicolumn{8}{l}{\textit{With controls ($c = 2$, monotone population effects)}} \\
+\multicolumn{8}{l}{\textit{With controls ($c = 2$, mixed monotone/non-monotone effects)}} \\
 \addlinespace[2pt]
-$F \approx 17$, $p{=}6$ & 93.4 & 92.2 & 91.2 & 90.8 & 0.904 & 0.865 & $-4.3\%$ \\
-$F \approx 17$, $p{=}10$ & 93.0 & 91.8 & 91.8 & 90.0 & 1.058 & 1.009 & $-4.6\%$ \\
-$F \approx 6$, $p{=}10$ & 96.9 & 96.1 & 98.0 & 97.5 & 1.868 & 1.754 & $-6.1\%$ \\
+$F \approx 17$, $p{=}6$ & 93.7 & 93.1 & 91.0 & 90.0 & 0.808 & 0.785 & $-2.9\%$ \\
+$F \approx 17$, $p{=}10$ & 93.4 & 92.5 & 90.8 & 89.5 & 0.917 & 0.878 & $-4.3\%$ \\
+$F \approx 6$, $p{=}10$ & 97.3 & 96.6 & 97.5 & 96.8 & 1.601 & 1.474 & $-7.9\%$ \\
 \bottomrule
 \end{tabular}
-\floatfoot{\footnotesize 400 replications; $B = 500$ multiplier bootstrap draws; $n = 50$, $N = 50$ unless noted. PW: pointwise; UB: uniform band. Band widths are medians across replications. ``$\Delta$ width'': percentage reduction in UB width for \est relative to 2SLS. 2SLS uses sandwich SEs and unprojected bootstrap; \est uses the projected bootstrap (PAVA applied inside each draw). Simple DGP: one endogenous regressor, no controls. With controls: $p - 1$ exogenous controls with monotone population effects of magnitude $c$; estimated coefficient functions oscillate in finite samples.}
+\floatfoot{\footnotesize 400 replications; $B = 500$ multiplier bootstrap draws; $n = 50$, $N = 50$ unless noted. PW: pointwise; UB: uniform band. Band widths are medians across replications. ``$\Delta$ width'': percentage reduction in UB width for \est relative to 2SLS. 2SLS uses sandwich SEs and unprojected bootstrap; \est uses the projected bootstrap (PAVA applied inside each draw). Simple DGP: one endogenous regressor, no controls. With controls: $p - 1$ exogenous controls with mixed monotone and non-monotone population effects scaled by $c$; estimated coefficient functions oscillate in finite samples.}
 \end{table}
 
 Coverage is near-nominal for both methods across all configurations, confirming the asymptotic equivalence in Theorem~\ref{thm:pw_ols_clt}. The projection does not distort inference. Because \est has lower IMSE at comparable standard errors, it has weakly higher power for testing $\beta_1(u) = 0$.
 
-The projected bootstrap produces narrower uniform bands for \est. With the simple DGP the reduction is small (0.2--1.9\%). With realistic controls, where noisily estimated control coefficients drive additional violations, it reaches 4--6\%, and about 10\% in our empirical application (Section~\ref{sec:empirical}). The projected bootstrap captures the variance reduction from PAVA, yielding a tighter critical value for the sup-statistic.
+The projected bootstrap produces narrower uniform bands for \est. With the simple DGP the reduction is small (0.2--1.9\%). With realistic controls, where noisily estimated control coefficients drive additional violations, it reaches 3--8\%, and about 10\% in our empirical application (Section~\ref{sec:empirical}). The projected bootstrap captures the variance reduction from PAVA, yielding a tighter critical value for the sup-statistic.
 
 \subsection{Summary}
 
