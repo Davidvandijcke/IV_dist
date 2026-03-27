@@ -22,7 +22,7 @@ EXPERIMENTS <- list(
     dgps = "dgp_centered",
     param_grid = data.frame(
       M         = 50, N = 50,
-      pi_Z      = c(0.1, 0.2, 0.3, 0.5, 0.7, 1.0),
+      pi_Z      = c(0.3, 0.5, 0.7, 1.0),
       base_dist = "lognormal",
       stringsAsFactors = FALSE
     ),

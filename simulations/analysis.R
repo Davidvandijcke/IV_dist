@@ -99,16 +99,19 @@ generate_table <- function() {
     100*pD$frac_invalid_2sls)
 
   # --- Panel E: MP baseline ---
+  # Approximate F-stats for MP DGP (precomputed)
+  f_map_mp <- c("25_25"=19, "25_50"=19, "50_25"=95, "50_50"=95, "100_25"=190, "100_50"=190)
   pE <- r_mp %>% filter(estimator %in% c("2sls","div")) %>%
     select(M, N, estimator, imse, frac_invalid) %>%
     pivot_wider(names_from=estimator, values_from=c(imse, frac_invalid),
                 names_glue="{.value}_{estimator}") %>%
-    mutate(b1_gain = 100*(1-imse_div/imse_2sls)) %>%
+    mutate(b1_gain = 100*(1-imse_div/imse_2sls),
+           F_approx = f_map_mp[paste(M, N, sep="_")]) %>%
     filter((M==25 & N==25) | (M==25 & N==50) | (M==50 & N==50))
   rows_E <- sapply(seq_len(nrow(pE)), function(i) {
     r <- pE[i,]
-    sprintf("$(n,N)=(%d,%d)$ & %s & %s & %.1f & --- & --- & --- & %.1f",
-      r$M, r$N, fmt(r$imse_2sls), fmt(r$imse_div), r$b1_gain,
+    sprintf("$F \\approx %d$, $(n,N)=(%d,%d)$ & %s & %s & %.1f & --- & --- & --- & %.1f",
+      r$F_approx, r$M, r$N, fmt(r$imse_2sls), fmt(r$imse_div), r$b1_gain,
       100*r$frac_invalid_2sls)
   })
 

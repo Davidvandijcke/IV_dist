@@ -77,7 +77,7 @@
 \maketitle
 
 \begin{abstract}
-We develop distribution-valued instrumental variable regression (\est), an IV method for settings where the outcome is an entire distribution---for instance, how import competition reshapes the wage distribution within a commuting zone. Framing this as IV regression in the 2-Wasserstein space, we obtain a single-step estimator that extends global Fr\'echet regression to the endogenous case. \est projects IV-weighted quantile curves onto the space of valid distributions and recovers coefficient functions by OLS. The projection reduces estimation error in every finite-sample realization and guarantees valid fitted distributions. Under a mild monotonicity condition, the projected estimator shares the same Gaussian limit as unconstrained 2SLS, so standard inference applies; under misspecification, the bootstrap remains valid for uniform bands. In simulations, the projection reduces IMSE by up to 57\%. Revisiting the distributional wage effects of Chinese import competition, the projected bootstrap produces 9--10\% narrower confidence bands and a subsampling exercise shows 19--31\% IMSE gains. Because the estimator vectorizes across quantiles rather than looping, it is orders of magnitude faster than existing implementations.
+We develop distribution-valued instrumental variable regression (\est), an IV method for settings where the outcome is an entire distribution---for instance, how import competition reshapes the wage distribution within a commuting zone. Framing this as IV regression in the 2-Wasserstein space, we obtain a single-step estimator that extends global Fr\'echet regression to the endogenous case. \est projects IV-weighted quantile curves onto the space of valid distributions and recovers coefficient functions by OLS. The projection reduces estimation error in every finite-sample realization and guarantees valid fitted distributions. Under a mild monotonicity condition, the projected estimator shares the same Gaussian limit as unconstrained 2SLS, so standard inference applies; under misspecification, the bootstrap remains valid for uniform bands. In simulations, the projection reduces IMSE by up to 62\%. Revisiting the distributional wage effects of Chinese import competition, the projected bootstrap produces 9--10\% narrower confidence bands and a subsampling exercise shows 19--31\% IMSE gains. Because the estimator vectorizes across quantiles rather than looping, it is orders of magnitude faster than existing implementations.
 
 \medskip
 \noindent \textbf{Keywords:} instrumental variables, distributional outcomes, Fr\'echet regression, Wasserstein distance, quantile functions, monotone projection
@@ -481,7 +481,7 @@ where $\hat{\bar{S}}_{\mathrm{2SLS}}$ is the sample analogue and $\hat{\xi}_j(u_
 \section{Monte Carlo simulations}
 \label{sec:simulation}
 
-We compare unconstrained 2SLS with \est across several DGP configurations. Note that unconstrained 2SLS coincides with the \CLP and \MP estimators without individual covariates, though our unconstrained estimator, by working directly with the quantile functions as outcomes, does not require first-stage quantile regression, which leads to faster computation, in addition to the theoretical advantages laid out above. For each, we report coefficient IMSE, the average squared Wasserstein distance $W_2^2$ between estimated and true conditional quantile functions, (uniform) confidence band coverage, and computational benchmarks. Across nearly all configurations, the IMSE improves by up to 60\%. Our projected bootstrap also achieves correct nominal coverage with up to 5\% smaller width (10\% in the empirical application). Finally, computational benchmarks show our estimator solves orders of magnitude faster than the ones of \CLP and \MP without individual covariates. 
+We compare unconstrained 2SLS with \est across several DGP configurations. Note that unconstrained 2SLS coincides with the \CLP and \MP estimators without individual covariates, though our unconstrained estimator, by working directly with the quantile functions as outcomes, does not require first-stage quantile regression, which leads to faster computation, in addition to the theoretical advantages laid out above. For each, we report coefficient IMSE, the average squared Wasserstein distance $W_2^2$ between estimated and true conditional quantile functions, (uniform) confidence band coverage, and computational benchmarks. Across nearly all configurations, the IMSE improves by up to 62\%. Our projected bootstrap also achieves correct nominal coverage with up to 5\% smaller width (10\% in the empirical application). Finally, computational benchmarks show our estimator solves orders of magnitude faster than the ones of \CLP and \MP without individual covariates. 
 
 \subsection{Data generating process}
 
@@ -495,7 +495,7 @@ x_{2j} = (\pi_Z + \delta(\eta_j - \tfrac{1}{2}))\, z_j + \eta_j + \sqrt{1 - \pi_
 \]
 where $z_j, \nu_j \sim \mathcal{N}(0,1)$, $\pi_Z \in (0,1]$ controls instrument strength, and $\delta \geq 0$ introduces first-stage heterogeneity across groups. When $\delta > 0$, the first-stage coefficient varies by group, as in Bartik/shift-share designs where the relationship between the instrument and the treatment depends on local economic structure. Because $z_j$ and $\nu_j$ are normal, $x_{2j}$ is centered and can be negative, as is typical for import competition shocks, tariff changes, or relative price variation.
 
-When exogenous controls $W_1, \ldots, W_{p-1} \sim \mathcal{N}(0,1)$ are included, odd-numbered controls have monotone quantile effects ($W_{jk} \cdot u$) while even-numbered controls have non-monotone effects ($W_{jk} \cdot 0.1 \sin(k\pi u)$). This mix reflects the fact that real control variables can shift the outcome distribution in different directions at different quantiles. We guarantee that the the structural quantile function $Q_{Y_j}(u)$ remains non-decreasing by making sure the intercept derivative $\sigma / \varphi(\Phi^{-1}(u))$ dominates. In finite samples, estimated coefficient functions oscillate more than their population counterparts, producing non-monotone fitted curves $\hat{\psi}_{X_j}$, with 0--43\% of estimated curves violating monotonicity in simulations. Given that 93\% of the unconstrained 2SLS quantile functions violate monotonicity in the empirical application below, we believe these DGPs are not overly favorable to our \est estimator.
+When exogenous controls $W_1, \ldots, W_{p-1} \sim \mathcal{N}(0,1)$ are included, odd-numbered controls have monotone quantile effects ($W_{jk} \cdot u$) while even-numbered controls have non-monotone effects ($W_{jk} \cdot 0.1 \sin(k\pi u)$). This mix reflects the fact that real control variables can shift the outcome distribution in different directions at different quantiles. We guarantee that the the structural quantile function $Q_{Y_j}(u)$ remains non-decreasing by making sure the intercept derivative $\sigma / \varphi(\Phi^{-1}(u))$ dominates. In finite samples, estimated coefficient functions oscillate more than their population counterparts, producing non-monotone fitted curves $\hat{\psi}_{X_j}$, with 0--45\% of estimated curves violating monotonicity in simulations. Given that 93\% of the unconstrained 2SLS quantile functions violate monotonicity in the empirical application below, we believe these DGPs are not overly favorable to our \est estimator.
 
 
 \subsection{Results}
@@ -504,7 +504,7 @@ Table~\ref{tab:simulations} reports coefficient IMSE, $W_2^2$, and the fraction 
 
 \input{tabs/tab_simulations}
 
-\paragraph{Instrument strength (Panel~A).} With a lognormal base distribution, a single endogenous regressor, and no controls, the largest gains occur at moderate instrument strength. At $F \approx 3$, \est reduces IMSE by 45\% and $W_2^2$ by 35\%, with 28\% of groups having non-monotone fitted distributions. At $F \approx 6$, gains remain large (44\% IMSE, 32\% $W_2^2$). Even at $F \approx 17$ the gain is 14\%, driven by the skewness of the lognormal base. With strong instruments ($F > 40$), violations become rare and gains vanish. At $F \approx 1$ the improvement is smaller (36\%) because 2SLS bias dominates variance, leaving less room for the projection to help. Figure~\ref{fig:iv_strength} plots both metrics against $F$.
+\paragraph{Instrument strength (Panel~A).} With a lognormal base distribution, a single endogenous regressor, and no controls, the largest gains occur at moderate instrument strength. At $F \approx 6$, \est reduces IMSE by 44\% and $W_2^2$ by 32\%, with 16\% of groups having non-monotone fitted distributions. Even at $F \approx 17$ the gain is 14\%, driven by the skewness of the lognormal base. With strong instruments ($F > 40$), violations become rare and gains vanish. Figure~\ref{fig:iv_strength} plots both metrics against $F$.
 
 \paragraph{Controls and heterogeneous first stage (Panel~B).} At moderate instrument strength ($F \approx 13$--$17$), controls and first-stage heterogeneity amplify the gains further. With $p = 2$ and $\delta = 1$, IMSE falls by 41\% and $W_2^2$ by 25\%; with $p = 5$ and $\delta = 0.5$, the reductions reach 62\% and 46\%. Each additional regressor adds a dimension to the fitted curve $\hat{\psi}_{X_j}(u) = \tilde{\beta}_0(u) + \sum_k \tilde{\beta}_{1,k}(u)(X_{jk} - \hat{\mu}_k)$, making it harder for all dimensions to satisfy monotonicity at once. Heterogeneous first-stage coefficients ($\delta > 0$) introduce group-specific misfit on top of the IV noise. Both features are standard in practice: shift-share instruments have heterogeneous first stages, and most specifications include controls. None of this matters when instruments are strong: at $F > 500$, gains are zero regardless of $p$ or $\delta$.
 
@@ -530,25 +530,25 @@ Table~\ref{tab:coverage} reports pointwise and uniform coverage alongside band w
 \cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
 & 2SLS & \est & 2SLS & \est & 2SLS & \est & $\Delta$ width \\
 \midrule
-\multicolumn{8}{l}{\textit{Simple DGP ($p = 1$, $n = 50$)}} \\
+\multicolumn{8}{l}{\textit{No controls ($p = 1$, $n = 50$, lognormal base)}} \\
 \addlinespace[2pt]
-$F \approx 6$ & 98.4 & 98.3 & 98.8 & 98.6 & 1.175 & 1.161 & $-1.2\%$ \\
-$F \approx 17$ & 95.7 & 95.6 & 95.6 & 95.4 & 0.692 & 0.689 & $-0.4\%$ \\
-$F \approx 17$, $n{=}100$ & 95.5 & 95.5 & 96.2 & 96.2 & 0.505 & 0.503 & $-0.4\%$ \\
+$F \approx 6$ & 98.2 & 98.0 & 98.8 & 99.0 & 1.721 & 1.671 & $-2.9\%$ \\
+$F \approx 17$ & 95.5 & 95.3 & 94.4 & 94.4 & 1.011 & 0.998 & $-1.3\%$ \\
+$F \approx 17$, $n{=}100$ & 94.9 & 94.9 & 94.0 & 94.0 & 0.725 & 0.722 & $-0.4\%$ \\
 \addlinespace[4pt]
-\multicolumn{8}{l}{\textit{With controls ($c = 2$, $n = 75$, mixed monotone/non-monotone effects)}} \\
+\multicolumn{8}{l}{\textit{With controls ($c = 2$, $n = 75$, normal base)}} \\
 \addlinespace[2pt]
 $F \approx 17$, $p{=}6$ & 94.1 & 93.5 & 94.2 & 92.2 & 0.668 & 0.652 & $-2.4\%$ \\
 $F \approx 17$, $p{=}10$ & 93.8 & 92.9 & 93.4 & 92.0 & 0.778 & 0.737 & $-5.2\%$ \\
 $F \approx 6$, $p{=}10$ & 97.7 & 97.3 & 98.4 & 98.2 & 1.333 & 1.261 & $-5.4\%$ \\
 \bottomrule
 \end{tabular}
-\floatfoot{\footnotesize 500 replications; $B = 1{,}000$ multiplier bootstrap draws; $N = 50$. PW: pointwise; UB: uniform band. Band widths are medians across replications. ``$\Delta$ width'': percentage reduction in UB width for \est relative to 2SLS. 2SLS uses sandwich SEs and unprojected bootstrap; \est uses the projected bootstrap (PAVA applied inside each draw). Simple DGP: one endogenous regressor, no controls. With controls: $p - 1$ exogenous controls with mixed monotone and non-monotone population effects scaled by $c$; estimated coefficient functions oscillate in finite samples.}
+\floatfoot{\footnotesize 500 replications; $B = 1{,}000$ multiplier bootstrap draws; $N = 50$. PW: pointwise; UB: uniform band. Band widths are medians across replications. ``$\Delta$ width'': percentage reduction in UB width for \est relative to 2SLS. 2SLS uses sandwich SEs and unprojected bootstrap; \est uses the projected bootstrap (PAVA applied inside each draw). No controls: single endogenous regressor, lognormal base distribution. With controls: $p - 1$ exogenous controls with mixed monotone and non-monotone population effects scaled by $c$, normal base distribution, $n = 75$.}
 \end{table}
 
 Coverage is near-nominal for both methods across all configurations, confirming the asymptotic equivalence in Theorem~\ref{thm:pw_ols_clt}. The projection does not distort inference. Because \est has lower IMSE at comparable standard errors, it has weakly higher power for testing $\beta_1(u) = 0$.
 
-The projected bootstrap produces narrower uniform bands for \est. With the simple DGP the reduction is small (0.4--1.2\%). With realistic controls, where noisily estimated control coefficients drive additional violations, it reaches 2--5\%, and about 10\% in our empirical application (Section~\ref{sec:empirical}). The projected bootstrap captures the variance reduction from PAVA, yielding a tighter critical value for the sup-statistic.
+The projected bootstrap produces narrower uniform bands for \est. Without controls the reduction is 1--3\%. With realistic controls, where noisily estimated control coefficients drive additional violations, it reaches 2--5\%, and about 10\% in our empirical application (Section~\ref{sec:empirical}). The projected bootstrap captures the variance reduction from PAVA, yielding a tighter critical value for the sup-statistic.
 
 \subsection{Computation}\label{sec:computation}
 
@@ -582,7 +582,7 @@ $n$ & $N$ & Total obs & \MP & \CLP & 2SLS & \est & Speedup \\
 
 \subsection{Summary}
 
-The $W_2^2$ improvement from Lemma~\ref{lemma:improvement} holds in every realization across all configurations. The projection helps most when instruments are moderate ($F \approx 3$--$17$), the specification includes multiple regressors with heterogeneous first stages, and within-group outcomes are skewed. All three are common in applied work. Inference is unaffected: coverage stays on target and bands are the same width or slightly narrower with the projected bootstrap. And \est is orders of magnitude faster than existing implementations when no individual-level covariates are present, because it vectorizes across quantile levels instead of looping.
+The $W_2^2$ improvement from Lemma~\ref{lemma:improvement} holds in every realization across all configurations. The projection helps most when instruments are moderate ($F \approx 6$--$17$), the specification includes multiple regressors with heterogeneous first stages, and within-group outcomes are skewed. All three are common in applied work. Inference is unaffected: coverage stays on target and bands are the same width or slightly narrower with the projected bootstrap. And \est is orders of magnitude faster than existing implementations when no individual-level covariates are present, because it vectorizes across quantile levels instead of looping.
 
 
 \section{Empirical illustrations}\label{sec:empirical}
