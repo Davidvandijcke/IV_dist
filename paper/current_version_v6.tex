@@ -519,7 +519,7 @@ Table~\ref{tab:simulations} reports coefficient IMSE, $W_2^2$, and the fraction 
 
 Theorem~\ref{thm:pw_ols_clt} establishes that \est and unconstrained 2SLS share the same asymptotic Gaussian process under Average Strictness, so standard 2SLS inference (sandwich SEs, multiplier bootstrap) applies to \est without modification.
 
-Table~\ref{tab:coverage} reports pointwise and uniform coverage alongside band widths from 400 replications with $B = 500$ bootstrap draws. For 2SLS we use sandwich SEs and the unprojected bootstrap; for \est we use the projected bootstrap, which runs PAVA inside each bootstrap draw. The first three rows use the simple DGP ($p = 1$); the last three add realistic controls with monotone population effects ($c = 2$), whose estimated coefficient functions oscillate across quantiles and drive violations in the fitted curves.
+Table~\ref{tab:coverage} reports pointwise and uniform coverage alongside band widths from 500 replications with $B = 1{,}000$ bootstrap draws. For 2SLS we use sandwich SEs and the unprojected bootstrap; for \est we use the projected bootstrap, which runs PAVA inside each bootstrap draw. The first three rows use the simple DGP ($p = 1$, $n = 50$); the last three add realistic controls with mixed monotone and non-monotone population effects ($c = 2$, $n = 75$), whose estimated coefficient functions oscillate across quantiles and drive violations in the fitted curves.
 
 \begin{table}[htbp]
 \centering\small
