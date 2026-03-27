@@ -152,7 +152,7 @@ generate_table <- function() {
     "Panel~A varies the first-stage $F$-statistic ($p = 1$, no controls). ",
     "Panel~B adds exogenous controls ($p$) and first-stage heterogeneity ($\\delta$) at $\\pi_Z = 0.5$. ",
     "Panel~C varies the base distribution $\\beta_0(u)$ at $F \\approx 17$. ",
-    "Panel~D combines moderate IV, controls, heterogeneous first stage, $t_5$ outcomes, and treatment heterogeneity. ",
+    "Panel~D combines moderate IV, controls, heterogeneous first stage, lognormal outcomes, and treatment heterogeneity. ",
     "Panel~E uses the original \\citet{melly2025minimum} specification ($\\pi_Z = 1$, log-normal covariates, $\\gamma(u) = \\sqrt{u}$).}\n",
     "\\end{table}\n"
   )

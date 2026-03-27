@@ -21,8 +21,9 @@ EXPERIMENTS <- list(
   iv_strength = list(
     dgps = "dgp_centered",
     param_grid = data.frame(
-      M    = 50, N = 50,
-      pi_Z = c(0.1, 0.2, 0.3, 0.5, 0.7, 1.0),
+      M         = 50, N = 50,
+      pi_Z      = c(0.1, 0.2, 0.3, 0.5, 0.7, 1.0),
+      base_dist = "lognormal",
       stringsAsFactors = FALSE
     ),
     estimators = c("2sls", "div"),
@@ -54,6 +55,7 @@ EXPERIMENTS <- list(
     param_grid = expand.grid(
       M         = 50, N = 50,
       pi_Z      = 0.5,
+      base_dist = "lognormal",
       p         = c(1, 2, 3, 5),
       hetero_fs = c(0, 0.5, 1.0),
       stringsAsFactors = FALSE
@@ -108,7 +110,7 @@ EXPERIMENTS <- list(
       pi_Z       = 0.5,
       p          = 3,
       hetero_fs  = 0.5,
-      base_dist  = "t5",
+      base_dist  = "lognormal",
       beta_slope = 0.2,
       stringsAsFactors = FALSE
     ),
